@@ -381,7 +381,11 @@ Contributions are welcome! Please follow these guidelines:
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
-**Note:** This project is strictly for educational and research purposes. Please respect the copyright of content providers.
+---
+
+## Disclaimer
+
+This project is strictly for educational and research purposes. Please respect the copyright of content providers.
 
 ---
 
