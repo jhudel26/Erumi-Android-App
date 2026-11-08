@@ -284,7 +284,7 @@ Follow the build instructions above to compile and install the APK.
 
 ### Option 2: Download Pre-built APK
 
-Download the latest release from the [Releases](https://github.com/yourusername/erumi-native/releases) page.
+Download the latest release from the [Releases]([https://github.com/yourusername/erumi-native/releases](https://github.com/jhudel26/Erumi-Android-App/releases/tag/v1.0.0)) page.
 
 **Note:** Enable "Install from Unknown Sources" in device settings.
 
