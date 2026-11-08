@@ -1,299 +1,441 @@
-# ERUMI
+<div align="center">
 
-### Your Anime & Manga Universe.
+<img src="app/src/main/res/drawable/erumi_logo.png" alt="Erumi Native" width="180" />
 
-<p align="center">
-  <img src="Screenshots/home.png" width="220" alt="Erumi Home Screen"/>
-</p>
+# E R U M I &nbsp; N A T I V E &nbsp; エルミ
 
-<p align="center">
-  <strong>A native Android entertainment application for anime streaming and offline viewing.</strong>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android"/>
-  <img src="https://img.shields.io/badge/Project-Independent-14B8A6?style=flat-square" alt="Independent Project"/>
-  <img src="https://img.shields.io/badge/Interface-Native%20Android-14B8A6?style=flat-square" alt="Native Android"/>
-  <img src="https://img.shields.io/badge/Status-In%20Development-orange?style=flat-square" alt="Development Status"/>
-</p>
+**A Cinema-Grade Standalone Android Anime Streaming Experience**
 
 ---
 
-## Overview
+[![Android](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com)
+[![Kotlin](https://img.shields.io/badge/Language-Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![Media3](https://img.shields.io/badge/Media-Media3%20ExoPlayer-FF6F00?style=for-the-badge)](https://developer.android.com/media/media3)
+[![Room](https://img.shields.io/badge/Storage-Room%20DB-009688?style=for-the-badge&logo=sqlite&logoColor=white)](https://developer.android.com/training/data-storage/room)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-**Erumi** is an independent native Android entertainment application designed to provide a convenient and modern anime streaming experience directly on Android devices.
-
-Built around a clean interface and a distinctive teal visual identity, Erumi brings together anime discovery, detailed content information, video playback, and offline media management in one application.
-
-The project focuses on delivering an intuitive viewing experience without requiring a separate desktop computer or companion PC application for its core Android functionality.
-
-Whether discovering anime, watching episodes, or managing downloaded content, Erumi aims to make entertainment accessible through a unified mobile experience.
-
-## Features
-
-### Anime Discovery & Browsing
-
-- Dedicated home screen for discovering anime.
-- Anime search functionality.
-- Detailed anime information pages.
-- Organized content presentation.
-- Intuitive navigation between content sections.
-
-### Media Player
-
-- Dedicated video playback interface.
-- Landscape-oriented viewing experience.
-- Playback controls.
-- Subtitle selection.
-- Media viewing optimized for mobile devices.
-
-### Offline Downloads
-
-- Dedicated offline downloads section.
-- Offline media library.
-- Individual offline content detail pages.
-- Access to downloaded media without requiring an active internet connection, where supported by the content.
-
-### User Interface
-
-- Modern native Android interface.
-- Distinctive teal-inspired theme.
-- Clean and minimal visual design.
-- Consistent navigation and screen layouts.
-- User-friendly settings interface.
+</div>
 
 ---
 
-## Screenshots
+## ✨ Overview
 
-Explore the Erumi application interface.
+> **Erumi Native** is a 100% standalone native Android anime streaming platform built with modern Android technologies. Eliminating all dependencies on external servers, companion PC applications, or WebView wrappers, it delivers a cinema-grade viewing experience entirely on your Android device.
 
-### 01. Home & Discovery
+### 🎯 Key Highlights
 
-The home screen serves as the main destination for discovering and browsing anime content.
-
-<p align="center">
-  <img src="Screenshots/home.png" width="260" alt="Erumi Home Screen"/>
-</p>
-
-### 02. Anime Details
-
-View detailed information about selected anime through a dedicated content page.
-
-<p align="center">
-  <img src="Screenshots/animedetailpage.png" width="260" alt="Anime Detail Page"/>
-</p>
-
-### 03. Video Player
-
-A dedicated media playback experience designed for comfortable anime viewing, including subtitle selection and playback controls.
-
-<p align="center">
-  <img src="Screenshots/player.png" width="260" alt="Erumi Video Player"/>
-</p>
-
-### 04. Search
-
-Find anime through the application's dedicated search interface.
-
-<p align="center">
-  <img src="Screenshots/search.png" width="260" alt="Erumi Search Screen"/>
-</p>
-
-### 05. Offline Downloads
-
-Manage downloaded content through a dedicated offline download interface.
-
-<p align="center">
-  <img src="Screenshots/offlinedownload.png" width="260" alt="Offline Downloads"/>
-</p>
-
-### 06. Offline Details
-
-Access individual information and available actions for offline media.
-
-<p align="center">
-  <img src="Screenshots/offlinedetailpage.png" width="260" alt="Offline Detail Page"/>
-</p>
-
-### 07. Settings
-
-Configure application preferences through the dedicated settings interface.
-
-<p align="center">
-  <img src="Screenshots/settings.png" width="260" alt="Erumi Settings"/>
-</p>
+- **📱 100% Standalone** – No Windows PC, no ErumiServer.exe, no local Wi-Fi proxy needed
+- **🎬 Cinema Player** – AndroidX Media3 ExoPlayer with HLS streaming, adaptive bitrate, and hardware acceleration
+- **🔍 Smart Search** – Multi-source fuzzy matching across AllAnime and AniList GraphQL APIs
+- **📚 Offline Support** – Download episodes for offline viewing with zero internet connection
+- **🎨 Dark Cinema Design** – Material 3 theme optimized for OLED displays
+- **⚡ Anti-Hotlinking** – On-the-fly PNG disguise header stripping in the media pipeline
 
 ---
 
-## Technology
+## 📸 App Screenshots
 
-Erumi is developed as a native Android application.
-
-The exact frameworks, libraries, and architectural components will be documented as the project implementation is finalized.
-
-| Category | Details |
-|---|---|
-| Platform | Android |
-| Application Type | Native Android |
-| UI Design | Teal-inspired interface |
-| Development Environment | Android Studio |
-| Build System | Gradle |
-| Source Control | Git & GitHub |
+<table>
+  <tr>
+    <td align="center"><img src="Screenshots/home.png" alt="Home Screen" width="280" /><br><b>Home</b></td>
+    <td align="center"><img src="Screenshots/search.png" alt="Search Screen" width="280" /><br><b>Search</b></td>
+    <td align="center"><img src="Screenshots/animedetailpage.png" alt="Anime Details" width="280" /><br><b>Anime Details</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="Screenshots/player.png" alt="Video Player" width="280" /><br><b>Video Player</b></td>
+    <td align="center"><img src="Screenshots/offlinedownload.png" alt="Downloads" width="280" /><br><b>Downloads</b></td>
+    <td align="center"><img src="Screenshots/offlinedetailpage.png" alt="Offline Detail" width="280" /><br><b>Offline Detail</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="Screenshots/settings.png" alt="Settings" width="280" /><br><b>Settings</b></td>
+  </tr>
+</table>
 
 ---
 
-## Project Structure
+## 🚀 Features
 
-```text
-Erumi-Android-App/
-│
-├── app/
-│   └── src/
-│       └── main/
-│
-├── gradle/
-│
-├── Screenshots/
-│   ├── home.png
-│   ├── animedetailpage.png
-│   ├── player.png
-│   ├── search.png
-│   ├── offlinedownload.png
-│   ├── offlinedetailpage.png
-│   └── settings.png
-│
-├── build.gradle.kts
-├── settings.gradle.kts
-├── gradlew
-├── gradlew.bat
-└── README.md
+### 🎬 Cinema Video Player
+
+- **Native HLS Streaming** – `.m3u8` adaptive bitrate playback (1080p, 720p, auto)
+- **Landscape Fullscreen** – Auto-orientation lock with immersive system bars
+- **Anti-Hotlinking Protection** – Real-time PNG disguise header stripping in Media3 DataSource
+- **Subtitle Support** – WebVTT overlay tracks with customizable size
+- **Audio Switching** – Instant toggle between Sub/Dub audio tracks
+- **Playback Controls** – Speed selection (0.5× - 2×), seek, play/pause
+- **Intro Skip** – One-tap 85-second intro skip button
+- **Auto-Next Episode** – Seamless automatic episode progression
+
+### 🔍 Advanced Search Engine
+
+- **Multi-Source Search** – Simultaneous queries across AllAnime and AniList GraphQL APIs
+- **Fuzzy Matching** – Character bigram similarity with exact title weighting
+- **Season Detection** – Smart identification of seasons and parts
+- **Waterfall Resolution** – Fallback through HiAnime → AniDB → AniNeko sources
+- **Search History** – Quick access to recent queries
+
+### 📚 Local User Library
+
+- **Continue Watching** – Resume cards with percentage progress tracking
+- **Watch History** – Complete logs with timestamps and purge options
+- **Watchlist** – Personal bookmarking for favorite anime
+- **Offline Downloads** – Full episode downloads for offline playback
+- **Storage Management** – Track download progress and storage usage
+
+### 🎨 Dark Cinema Design System
+
+- **Primary Accent** – `#14B8A6` (Teal)
+- **Deep Background** – `#090D12` (Cinema Black)
+- **Material 3** – Modern responsive layouts with smooth transitions
+- **OLED Optimized** – True black backgrounds for power efficiency
+
+---
+
+## 🏗️ Architecture
+
+Erumi Native follows **Clean Architecture** principles with MVVM pattern:
+
+```
+┌────────────────────────────────────────────────────────┐
+│                   PRESENTATION LAYER                   │
+│   • Jetpack Compose UI (Material 3 Dark Cinema Theme)  │
+│   • ViewModels (StateFlow & Coroutines)                │
+│   • Navigation Component (ErumiNavGraph)               │
+└───────────────────────────▲────────────────────────────┘
+                            │
+┌───────────────────────────┴────────────────────────────┐
+│                      DOMAIN LAYER                      │
+│   • Business Models (Anime, Episode, StreamSource)     │
+│   • Repository Interfaces                              │
+│   • Engine Resolvers (EpisodeResolver, FuzzyMatcher)   │
+└───────────────────────────▲────────────────────────────┘
+                            │
+┌───────────────────────────┴────────────────────────────┐
+│                       DATA LAYER                       │
+│   • Data Sources (AllAnime, AniList, HiAnime, etc.)    │
+│   • Room Database (AppDatabase & DAOs)                 │
+│   • DataStore Preferences                              │
+│   • Media3 DataSource & Download Service               │
+└────────────────────────────────────────────────────────┘
 ```
 
-*The structure above is illustrative; additional files and directories may exist in the actual project.*
+### Project Structure
+
+```
+app/src/main/java/com/erumi/nativeapp/
+├── core/
+│   ├── common/        # Constants, Resource wrapper
+│   ├── database/      # Room AppDatabase, DAOs, Entities
+│   ├── datastore/     # UserPreferencesDataStore
+│   ├── download/      # Media3 ErumiDownloadService
+│   ├── network/       # ApiClient, DisguiseHeaderDataSource
+│   └── utils/         # FuzzyMatcher, OtakuCipher
+├── data/
+│   └── repository/    # AnimeRepository, UserLibraryRepository
+├── domain/
+│   └── model/         # Business domain entities
+├── engine/
+│   ├── sources/       # AllAnimeSource, AniListSource, etc.
+│   └── resolver/      # EpisodeResolver waterfall pipeline
+├── features/
+│   ├── home/          # Home screen with Featured Banner
+│   ├── search/        # Search bar and results grid
+│   ├── anime_details/ # Synopsis, relations, episode drawer
+│   ├── player/        # Media3 cinema player
+│   ├── watchlist/     # Saved anime collection
+│   ├── history/       # Watch history logs
+│   ├── downloads/     # Offline download manager
+│   └── settings/      # Playback and app settings
+├── navigation/        # Jetpack Compose Navigation graph
+├── ui/
+│   ├── components/    # Reusable UI components
+│   └── theme/         # Color, Type, Theme definitions
+├── ErumiApplication.kt
+└── MainActivity.kt
+```
 
 ---
 
-## Getting Started
+## 🛠️ Tech Stack
+
+### Core Technologies
+
+| Component | Technology | Version |
+|-----------|-----------|---------|
+| **Language** | Kotlin | 1.9.22 |
+| **UI Framework** | Jetpack Compose | BOM 2024.02.00 |
+| **Design System** | Material 3 | - |
+| **Architecture** | MVVM + Clean Architecture | - |
+| **Min SDK** | Android 8.0 (API 26) | - |
+| **Target SDK** | Android 14 (API 34) | - |
+
+### Media & Networking
+
+| Purpose | Library | Version |
+|---------|---------|---------|
+| **Media Engine** | AndroidX Media3 ExoPlayer | 1.3.0 |
+| **HLS Support** | media3-exoplayer-hls | 1.3.0 |
+| **Player UI** | media3-ui | 1.3.0 |
+| **Downloads** | media3-database | 1.3.0 |
+| **Networking** | OkHttp | 4.12.0 |
+| **Serialization** | Gson | 2.10.1 |
+| **Image Loading** | Coil Compose | 2.6.0 |
+
+### Data Storage
+
+| Purpose | Library | Version |
+|---------|---------|---------|
+| **Database** | AndroidX Room | 2.6.1 |
+| **Preferences** | AndroidX DataStore | 1.0.0 |
+
+### Background Processing
+
+| Purpose | Library | Version |
+|---------|---------|---------|
+| **Work Manager** | AndroidX WorkManager | 2.9.0 |
+| **Coroutines** | kotlinx-coroutines-android | 1.7.3 |
+
+### Data Sources
+
+- **AllAnime** – GraphQL API for catalog and search
+- **AniList** – GraphQL API for metadata and relations
+- **HiAnime** – Primary video stream source with OtakuCipher decryption
+- **AniDB** – Secondary stream fallback
+- **AniNeko** – Tertiary stream fallback
+
+---
+
+## 🗄️ Database Schema
+
+### Room Database Entities
+
+| Entity | Primary Key | Description |
+|--------|-------------|-------------|
+| `AnimeEntity` | `id: String` | Cached anime metadata, synopsis, titles, episodes count, ratings |
+| `EpisodeEntity` | `id: String` | Cached episode numbers and provider IDs |
+| `WatchHistoryEntity` | `id: String` | Watch history log with timestamps, position, duration |
+| `ContinueWatchingEntity` | `animeId: String` | Active resume shelf items (5s-95% progress) |
+| `WatchlistEntity` | `animeId: String` | User-saved anime bookmarks |
+| `DownloadEntity` | `id: String` | Download queue status, progress, file paths |
+| `SearchHistoryEntity` | `query: String` | Recent search queries |
+
+### DataStore Preferences
+
+Stored in `erumi_preferences.preferences_pb`:
+
+- `preferred_quality` – "1080p", "720p", "Auto"
+- `auto_next_episode` – Boolean (default: true)
+- `default_audio` – "sub", "dub"
+- `default_subtitle_lang` – "en"
+- `subtitle_size` – Float (default: 1.0f)
+- `skip_intro` – Boolean (default: true)
+- `wifi_only_downloads` – Boolean (default: false)
+- `app_theme` – "Dark Cinema"
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-Before building the application, make sure you have:
-
-- Android Studio installed.
-- Android SDK configured.
-- A compatible JDK version.
-- Git installed.
-- An Android device or emulator.
+- JDK 17 or higher
+- Android SDK (API 34)
+- Gradle 8.3.0
+- Android Studio (recommended)
 
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/jhudel26/Erumi-Android-App.git
+git clone https://github.com/yourusername/erumi-native.git
+cd erumi-native
 ```
 
-### Open in Android Studio
-
-1. Open Android Studio.
-2. Select **Open** from the welcome screen.
-3. Locate the cloned `Erumi-Android-App` directory.
-4. Allow Gradle to synchronize the project.
-5. Wait for the required dependencies to finish downloading.
-6. Connect an Android device or launch an emulator.
-7. Click **Run** to build and launch Erumi.
-
-### Build Using Terminal
-
-On Windows:
-
-```bash
-gradlew.bat assembleDebug
-```
-
-On macOS or Linux:
+### Build Debug APK
 
 ```bash
 ./gradlew assembleDebug
 ```
 
-The generated debug APK is normally located at:
+Or on Windows:
 
-```text
-app/build/outputs/apk/debug/app-debug.apk
+```bat
+build_apk.bat
+```
+
+Output: `app/build/outputs/apk/debug/app-debug.apk`
+
+### Build Release APK
+
+```bash
+./gradlew assembleRelease
+```
+
+Output: `app/build/outputs/apk/release/app-release-unsigned.apk`
+
+**Note:** Configure signing in `app/build.gradle.kts` for release builds.
+
+### Install on Device
+
+```bash
+adb install app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ---
 
-## Development Roadmap
+## 📱 Installation
 
-Erumi is an evolving project. The following roadmap outlines areas of development and potential improvements.
+### Option 1: Build from Source
 
-- [ ] Complete and refine the native Android experience.
-- [ ] Improve anime discovery and browsing.
-- [ ] Enhance anime detail pages.
-- [ ] Refine the media player experience.
-- [ ] Improve subtitle selection and playback compatibility.
-- [ ] Enhance offline download management.
-- [ ] Improve offline playback reliability.
-- [ ] Optimize application performance.
-- [ ] Strengthen application security.
-- [ ] Improve compatibility across Android devices.
-- [ ] Continue refining UI/UX consistency.
+Follow the build instructions above to compile and install the APK.
+
+### Option 2: Download Pre-built APK
+
+Download the latest release from the [Releases](https://github.com/yourusername/erumi-native/releases) page.
+
+**Note:** Enable "Install from Unknown Sources" in device settings.
 
 ---
 
-## Design Philosophy
+## 🎯 Feature Details
 
-Erumi is built around three main principles:
+### Video Playback
 
-**Simplicity**
+- Multi-quality streaming with adaptive bitrate
+- Native HLS (`.m3u8`) support
+- WebVTT subtitles with customizable size
+- Instant Sub/Dub audio switching
+- Playback speed control (0.5× - 2×)
+- One-tap intro skip (85 seconds)
+- Auto-advance to next episode
 
-An intuitive interface that makes discovering and watching anime straightforward.
+### Search & Discovery
 
-**Performance**
+- Fuzzy matching for typos and alternative titles
+- Multi-source search (AllAnime + AniList)
+- Season/part detection
+- Recent search history
+- Popular tag browsing
 
-A mobile-focused experience designed to run directly on Android devices.
+### Offline Downloads
 
-**Consistency**
+- Full episode downloads
+- Download progress tracking
+- Offline playback without internet
+- Wi-Fi only download option
 
-A unified visual identity across browsing, playback, offline management, and settings.
+### User Library
 
-### Brand Identity
-
-- **Name:** ERUMI
-- **Theme:** Teal
-- **Platform:** Android
-- **Purpose:** Anime Entertainment
-- **Experience:** Discover. Watch. Enjoy.
-
----
-
-## Disclaimer
-
-Erumi is an independent software project developed for entertainment and educational purposes.
-
-Erumi does not claim ownership of any third-party anime, artwork, images, videos, subtitles, or other media that may be accessed through the application.
-
-All third-party content remains the property of its respective copyright holders, creators, publishers, and distributors.
-
-Users are responsible for ensuring that their access to and use of third-party content complies with applicable copyright laws and regulations.
+- Continue watching with progress tracking
+- Complete watch history logs
+- Watchlist for bookmarking
+- Visual progress indicators
 
 ---
 
-## License
+## 🔧 Configuration
 
-No license has been specified for this repository yet.
+### Network Settings
 
-Unless a license is added, all rights are reserved by the respective copyright holder. Please contact the repository owner for permission before redistributing or reusing the source code.
+- OkHttp with connection pooling
+- SSL tolerance for compatibility
+- Custom User-Agent headers
+
+### Player Settings
+
+Available in Settings screen:
+- Preferred video quality
+- Default audio language
+- Subtitle language and size
+- Auto-next episode toggle
+- Skip intro toggle
+
+### Storage Management
+
+- Clear cache to free space
+- Manage downloaded episodes
+- View storage usage breakdown
 
 ---
 
-<p align="center">
-  <strong>ERUMI</strong>
-  <br/>
-  <em>Your Anime & Manga Universe.</em>
-  <br/><br/>
-  Built with passion for anime enthusiasts.
-  <br/><br/>
-  <a href="https://github.com/jhudel26/Erumi-Android-App">GitHub Repository</a>
-</p>
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these guidelines:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Code Style
+
+- Follow Kotlin coding conventions
+- Use Jetpack Compose best practices
+- Write clean, readable code
+- Add comments for complex logic
+
+### Testing
+
+- Test on multiple Android versions
+- Verify video playback
+- Test offline functionality
+- Check database operations
+
+---
+
+## 📄 License
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+
+**Note:** This project is strictly for educational and research purposes. Please respect the copyright of content providers.
+
+---
+
+## 🙏 Acknowledgments
+
+- **AndroidX Team** – Excellent Jetpack libraries
+- **AllAnime** – Anime catalog API
+- **AniList** – Comprehensive anime metadata
+- **HiAnime** – Video streaming sources
+- **Kotlin Team** – Amazing programming language
+
+---
+
+## 📞 Support
+
+If you encounter issues or have questions:
+
+- Open an issue on GitHub
+- Check existing issues for solutions
+- Read documentation in project docs
+
+---
+
+## 🗺️ Roadmap
+
+### Planned Features
+
+- [ ] Chromecast support
+- [ ] Background audio playback
+- [ ] Custom playlists
+- [ ] Cross-device sync
+- [ ] Dark/Light theme toggle
+- [ ] More subtitle languages
+- [ ] Recommendation engine
+
+### Known Issues
+
+- Some anime may lack subtitles in all languages
+- Download speeds depend on network connection
+- Certain episodes may have limited quality options
+
+---
+
+<div align="center">
+
+**Made with ❤️ by the Erumi Native Team**
+
+エルミ • E R U M I
+
+</div>
