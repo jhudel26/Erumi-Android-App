@@ -137,7 +137,7 @@ fun SettingsScreen(
                     SettingsItem(
                         icon = Icons.Default.Info,
                         title = "App Version",
-                        subtitle = "Erumi v1.0.1"
+                        subtitle = "Erumi v1.1.0"
                     )
                     HorizontalDivider(color = ErumiBorder, thickness = 0.5.dp)
                     SettingsItem(
