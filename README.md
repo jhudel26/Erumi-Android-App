@@ -16,6 +16,16 @@
 
 > **Erumi Native** is a 100% standalone native Android anime streaming platform built with modern Android technologies. Eliminating all dependencies on external servers, companion PC applications, or WebView wrappers, it delivers a cinema-grade viewing experience entirely on your Android device.
 
+> [!CAUTION]
+> ## ⚠️ EDUCATIONAL PURPOSE ONLY — HEAVY DISCLAIMER
+>
+> **PLEASE READ CAREFULLY BEFORE USING OR CONTRIBUTING:**
+>
+> 1. **No Content Ownership**: This project does **NOT** host, store, or distribute any copyrighted files (videos, images, or audio). All content is fetched in real-time from third-party publicly available sources (e.g., AllAnime, AniList, HiAnime).
+> 2. **Educational Use**: This source code is strictly for **educational and research purposes**. It demonstrates high-performance HTTP server architecture, HLS proxy streaming, and cross-platform web/APK deployment techniques.
+> 3. **Legal Liability**: The developers and contributors of this repository assume **NO LIABILITY** for any misuse of this software. Users are solely responsible for ensuring their usage complies with local laws and the Terms of Service of the source websites.
+> 4. **No Commercial Use**: This project is **NOT** for sale and should not be used for any commercial activities.
+
 ### Key Highlights
 
 - **100% Standalone** – No Windows PC, no ErumiServer.exe, no local Wi-Fi proxy needed
@@ -380,22 +390,6 @@ Contributions are welcome! Please follow these guidelines:
 ## License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
-
----
-
-## Caution
-
-**EDUCATIONAL PURPOSE ONLY — HEAVY DISCLAIMER**
-
-**PLEASE READ CAREFULLY BEFORE USING OR CONTRIBUTING:**
-
-**No Content Ownership:** This project does NOT host, store, or distribute any copyrighted files (videos, images, or audio). All content is fetched in real-time from third-party publicly available sources (e.g., AllAnime, AniList, HiAnime).
-
-**Educational Use:** This source code is strictly for educational and research purposes. It demonstrates high-performance HTTP server architecture, HLS proxy streaming, and cross-platform web/APK deployment techniques.
-
-**Legal Liability:** The developers and contributors of this repository assume NO LIABILITY for any misuse of this software. Users are solely responsible for ensuring their usage complies with local laws and the Terms of Service of the source websites.
-
-**No Commercial Use:** This project is NOT for sale and should not be used for any commercial activities.
 
 ---
 
