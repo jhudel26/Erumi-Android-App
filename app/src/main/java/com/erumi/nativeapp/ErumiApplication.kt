@@ -9,6 +9,7 @@ import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import com.erumi.nativeapp.core.download.ErumiDownloadService
+import com.erumi.nativeapp.core.image.CoilConfig
 import com.erumi.nativeapp.core.network.ApiClient
 
 class ErumiApplication : Application(), ImageLoaderFactory {
@@ -33,20 +34,6 @@ class ErumiApplication : Application(), ImageLoaderFactory {
     }
 
     override fun newImageLoader(): ImageLoader {
-        return ImageLoader.Builder(this)
-            .okHttpClient(ApiClient.okHttpClient)
-            .memoryCache {
-                MemoryCache.Builder(this)
-                    .maxSizePercent(0.25)
-                    .build()
-            }
-            .diskCache {
-                DiskCache.Builder()
-                    .directory(cacheDir.resolve("image_cache"))
-                    .maxSizeBytes(100L * 1024 * 1024) // 100 MB
-                    .build()
-            }
-            .crossfade(true)
-            .build()
+        return CoilConfig.getImageLoader(this, ApiClient.okHttpClient)
     }
 }

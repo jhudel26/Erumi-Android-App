@@ -55,14 +55,18 @@ class AniDBSource(private val client: OkHttpClient = ApiClient.okHttpClient) : A
 
             val qInfo = FuzzyMatcher.parseSeasonAndPart(animeTitle)
             val qSub = FuzzyMatcher.extractSubtitleKeywords(animeTitle)
-            var bestId = matches.first().id
-            var bestScore = -999999.0
+            var bestId: String? = null
+            var bestScore = Double.NEGATIVE_INFINITY
             val cleanTarget = FuzzyMatcher.cleanForSearch(animeTitle)
 
             for (m in matches) {
                 val tCand = m.slug.replace("-", " ")
+                // Skip slug hits that aren't a real title match for the query.
+                if (!FuzzyMatcher.isValidTitleMatch(animeTitle, tCand, m.slug)) continue
+
                 val cInfo = FuzzyMatcher.parseSeasonAndPart(tCand)
                 var score = FuzzyMatcher.titleSimilarity(cleanTarget, tCand) * 100.0
+                score += FuzzyMatcher.wordOverlapRatio(animeTitle, tCand) * 80.0
 
                 if (qInfo.season != null && cInfo.season != null) {
                     if (qInfo.season == cInfo.season) score += 500.0 else score -= 2000.0
@@ -76,7 +80,8 @@ class AniDBSource(private val client: OkHttpClient = ApiClient.okHttpClient) : A
 
                 if (qSub.isNotEmpty()) {
                     val words = FuzzyMatcher.cleanWords(tCand).toSet()
-                    if (qSub.intersect(words).isNotEmpty()) score += 300.0
+                    val hits = qSub.intersect(words)
+                    score += hits.size * 100.0
                 }
 
                 if (score > bestScore) {
@@ -84,6 +89,9 @@ class AniDBSource(private val client: OkHttpClient = ApiClient.okHttpClient) : A
                     bestId = m.id
                 }
             }
+
+            // Hard floor: refuse a weak "best" so we don't stream a different series.
+            if (bestId.isNullOrBlank() || bestScore < 55.0) return@withContext null
 
             val epUrl = "${Constants.ANIDB_BASE_URL}/api/frontend/anime/$bestId/episodes"
             val reqEp = Request.Builder()

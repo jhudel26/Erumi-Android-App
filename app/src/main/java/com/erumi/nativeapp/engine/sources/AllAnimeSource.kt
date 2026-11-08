@@ -160,7 +160,7 @@ class AllAnimeSource(private val client: OkHttpClient = ApiClient.okHttpClient) 
                 }
 
                 val rawThumb = edge.get("thumbnail")?.takeIf { !it.isJsonNull }?.asString
-                val poster = if (rawThumb?.startsWith("http") == true) rawThumb else null
+                val poster = normalizeImageUrl(rawThumb)
                 val banner = edge.get("banner")?.takeIf { !it.isJsonNull }?.asString
 
                 val genreList = mutableListOf<String>()
@@ -186,5 +186,31 @@ class AllAnimeSource(private val client: OkHttpClient = ApiClient.okHttpClient) 
         } catch (e: Exception) {
             emptyList()
         }
+    }
+
+    /**
+     * Normalizes AllAnime image URLs to handle protocol-relative URLs.
+     */
+    private fun normalizeImageUrl(url: String?): String? {
+        if (url.isNullOrBlank()) return null
+
+        val trimmed = url.trim()
+
+        // Already valid https
+        if (trimmed.startsWith("https://", ignoreCase = true)) {
+            return trimmed
+        }
+
+        // Convert http to https
+        if (trimmed.startsWith("http://", ignoreCase = true)) {
+            return trimmed.replace("http://", "https://", ignoreCase = true)
+        }
+
+        // Handle protocol-relative URLs (//cdn.example.com/image.jpg)
+        if (trimmed.startsWith("//")) {
+            return "https:$trimmed"
+        }
+
+        return null
     }
 }

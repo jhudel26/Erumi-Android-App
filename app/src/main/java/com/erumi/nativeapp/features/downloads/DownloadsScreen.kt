@@ -10,6 +10,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForwardIos
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.FileDownloadOff
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.PauseCircle
+import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,8 +27,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.erumi.nativeapp.core.image.ImageResolver
+import com.erumi.nativeapp.domain.model.Anime
 import com.erumi.nativeapp.domain.model.DownloadStatus
+import com.erumi.nativeapp.ui.components.ErumiImagePlaceholder
+import com.erumi.nativeapp.ui.components.ShimmerLoadingPlaceholder
 import com.erumi.nativeapp.ui.theme.*
 
 @Composable
@@ -55,6 +64,53 @@ fun DownloadsScreen(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        // Queue management buttons
+        if (state.animeGroups.any { it.isAnyDownloading }) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { viewModel.pauseAllDownloads() },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = BgCard)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.PauseCircle,
+                        contentDescription = null,
+                        tint = TextPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Pause All", color = TextPrimary)
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        } else if (state.animeGroups.any { 
+            it.episodes.any { it.status == DownloadStatus.PAUSED } 
+        }) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { viewModel.resumeAllDownloads() },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.PlayCircle,
+                        contentDescription = null,
+                        tint = BgMain,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Resume All", color = BgMain)
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
         if (state.animeGroups.isEmpty()) {
             Box(
@@ -99,7 +155,9 @@ fun DownloadsScreen(
                         // Tapping the card navigates to the Detail page which shows
                         // downloaded episodes inline with play/status indicators
                         onClick = { onAnimeClick(group.animeTitle) },
-                        onDeleteClick = { groupToDelete = group }
+                        onDeleteClick = { groupToDelete = group },
+                        onPauseClick = { downloadId -> viewModel.pauseDownload(downloadId) },
+                        onResumeClick = { downloadId -> viewModel.resumeDownload(downloadId) }
                     )
                 }
             }
@@ -148,9 +206,27 @@ fun DownloadsScreen(
 fun AnimeDownloadGroupCard(
     group: AnimeDownloadGroup,
     onClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    onPauseClick: (String) -> Unit = {},
+    onResumeClick: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
+    val imageResolver = remember { ImageResolver(context) }
+    var resolvedPoster by remember { mutableStateOf(group.poster) }
+
+    LaunchedEffect(group.animeTitle, group.poster) {
+        if (group.poster.isNullOrBlank()) {
+            val anime = Anime(
+                id = group.animeTitle, // Use title as ID since we don't have a real ID
+                title = group.animeTitle,
+                poster = null
+            )
+            resolvedPoster = imageResolver.resolvePosterUrl(anime)
+        } else {
+            resolvedPoster = group.poster
+        }
+    }
+
     val sizeMb = group.totalDownloadedBytes / (1024 * 1024)
 
     // Summarise which episodes are downloaded, e.g. "Ep 1, 2, 3" or "Ep 1–12"
@@ -187,14 +263,23 @@ fun AnimeDownloadGroupCard(
                     .clip(RoundedCornerShape(8.dp))
                     .background(BgSurfaceElevated)
             ) {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = ImageRequest.Builder(context)
-                        .data(group.poster)
+                        .data(resolvedPoster)
                         .crossfade(true)
                         .build(),
                     contentDescription = group.animeTitle,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    loading = {
+                        ShimmerLoadingPlaceholder(modifier = Modifier.fillMaxSize())
+                    },
+                    error = {
+                        ErumiImagePlaceholder(
+                            modifier = Modifier.fillMaxSize(),
+                            title = group.animeTitle
+                        )
+                    }
                 )
             }
 
@@ -264,6 +349,28 @@ fun AnimeDownloadGroupCard(
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
+            // Show pause/resume button for individual episodes
+            if (group.episodes.size == 1) {
+                val download = group.episodes.first()
+                if (download.status == DownloadStatus.DOWNLOADING || download.status == DownloadStatus.PENDING) {
+                    IconButton(onClick = { onPauseClick(download.id) }) {
+                        Icon(
+                            imageVector = Icons.Rounded.Pause,
+                            contentDescription = "Pause Download",
+                            tint = TealPrimary
+                        )
+                    }
+                } else if (download.status == DownloadStatus.PAUSED) {
+                    IconButton(onClick = { onResumeClick(download.id) }) {
+                        Icon(
+                            imageVector = Icons.Rounded.PlayArrow,
+                            contentDescription = "Resume Download",
+                            tint = TealPrimary
+                        )
+                    }
+                }
+            }
+
             IconButton(onClick = onDeleteClick) {
                 Icon(
                     imageVector = Icons.Rounded.Delete,

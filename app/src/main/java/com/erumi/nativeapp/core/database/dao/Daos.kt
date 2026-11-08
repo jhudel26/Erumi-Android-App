@@ -50,6 +50,9 @@ interface ContinueWatchingDao {
 
     @Query("DELETE FROM continue_watching WHERE animeId = :animeId")
     suspend fun removeByAnimeId(animeId: String)
+
+    @Query("DELETE FROM continue_watching")
+    suspend fun clearAll()
 }
 
 @Dao
@@ -104,4 +107,22 @@ interface SearchHistoryDao {
 
     @Query("DELETE FROM search_history")
     suspend fun clearAllSearches()
+}
+
+@Dao
+interface ImageCacheDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertImageCache(cache: ImageCacheEntity)
+
+    @Query("SELECT * FROM image_cache WHERE animeId = :id LIMIT 1")
+    suspend fun getImageCacheById(id: String): ImageCacheEntity?
+
+    @Query("SELECT * FROM image_cache WHERE resolvedAt < :expiryTime")
+    suspend fun getExpiredCache(expiryTime: Long): List<ImageCacheEntity>
+
+    @Query("DELETE FROM image_cache WHERE animeId = :animeId")
+    suspend fun deleteCache(animeId: String)
+
+    @Query("DELETE FROM image_cache WHERE resolvedAt < :expiryTime")
+    suspend fun deleteExpiredCache(expiryTime: Long)
 }

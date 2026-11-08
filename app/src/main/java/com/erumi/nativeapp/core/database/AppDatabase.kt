@@ -6,6 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.erumi.nativeapp.core.common.Constants
 import com.erumi.nativeapp.core.database.dao.*
 import com.erumi.nativeapp.core.database.entity.*
@@ -25,6 +27,22 @@ class DatabaseConverters {
     }
 }
 
+// Migration from version 1 to 2: Add ImageCacheEntity
+val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        // Create image_cache table
+        database.execSQL("""
+            CREATE TABLE IF NOT EXISTS image_cache (
+                animeId TEXT PRIMARY KEY NOT NULL,
+                resolvedPosterUrl TEXT,
+                resolvedBannerUrl TEXT,
+                source TEXT,
+                resolvedAt INTEGER NOT NULL
+            )
+        """.trimIndent())
+    }
+}
+
 @Database(
     entities = [
         AnimeEntity::class,
@@ -33,10 +51,11 @@ class DatabaseConverters {
         ContinueWatchingEntity::class,
         WatchlistEntity::class,
         DownloadEntity::class,
-        SearchHistoryEntity::class
+        SearchHistoryEntity::class,
+        ImageCacheEntity::class
     ],
-    version = 1,
-    exportSchema = false
+    version = 2,
+    exportSchema = true
 )
 @TypeConverters(DatabaseConverters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -47,6 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun watchlistDao(): WatchlistDao
     abstract fun downloadDao(): DownloadDao
     abstract fun searchHistoryDao(): SearchHistoryDao
+    abstract fun imageCacheDao(): ImageCacheDao
 
     companion object {
         @Volatile
@@ -59,6 +79,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     Constants.DATABASE_NAME
                 )
+                    .addMigrations(MIGRATION_1_2)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

@@ -50,6 +50,7 @@ class HiAnimeSource(private val client: OkHttpClient = ApiClient.okHttpClient) :
 
         try {
             val url = "${Constants.HIANIME_BASE_URL}/search?keyword=${URLEncoder.encode(clean, "UTF-8")}"
+            android.util.Log.d("ErumiHiAnime", "rawSearch URL: $url")
             val request = Request.Builder()
                 .url(url)
                 .build()
@@ -58,6 +59,8 @@ class HiAnimeSource(private val client: OkHttpClient = ApiClient.okHttpClient) :
                 resp.body?.string()
             } ?: return@withContext emptyList()
 
+            android.util.Log.d("ErumiHiAnime", "HTML length: ${html.length}")
+
             val pattern = Pattern.compile("""<h3 class="film-name">\s*<a href="[^"]*/([^"/]*)"\s*title="([^"]*)"""")
             val matcher = pattern.matcher(html)
             val results = mutableListOf<HiAnimeSearchResult>()
@@ -65,30 +68,39 @@ class HiAnimeSource(private val client: OkHttpClient = ApiClient.okHttpClient) :
                 val slug = matcher.group(1) ?: continue
                 val name = matcher.group(2) ?: ""
                 val id = slug.substringAfterLast("-")
-                results.add(
-                    HiAnimeSearchResult(
-                        id = id,
-                        slug = slug,
-                        name = name.replace("&#039;", "'").replace("&amp;", "&").replace("&quot;", "\"").trim()
-                    )
+                val result = HiAnimeSearchResult(
+                    id = id,
+                    slug = slug,
+                    name = name.replace("&#039;", "'").replace("&amp;", "&").replace("&quot;", "\"").trim()
                 )
+                results.add(result)
+                android.util.Log.d("ErumiHiAnime", "Found: ${result.name} (slug: ${result.slug}, id: ${result.id})")
             }
+            android.util.Log.d("ErumiHiAnime", "Total results: ${results.size}")
             results
         } catch (e: Exception) {
+            android.util.Log.e("ErumiHiAnime", "rawSearch error for query '$query': ${e.message}", e)
             emptyList()
         }
     }
 
     override suspend fun getEpisodes(animeTitle: String, showId: String?): List<Episode> = withContext(Dispatchers.IO) {
         val cleanT = FuzzyMatcher.cleanTitleForHiAnime(animeTitle)
+        android.util.Log.d("ErumiHiAnime", "getEpisodes for: $animeTitle -> cleaned: $cleanT")
         val searchResults = rawSearch(cleanT)
+        android.util.Log.d("ErumiHiAnime", "rawSearch returned ${searchResults.size} results")
         if (searchResults.isEmpty()) return@withContext emptyList()
 
+        // Never fall back to unvalidated search hits — that plays the wrong anime
+        // (e.g. shared weak words like "magic"/"strongest" across unrelated titles).
         val validResults = searchResults.filter {
             FuzzyMatcher.isValidTitleMatch(cleanT, it.name, it.slug)
-        }.ifEmpty { searchResults }
+        }
+        android.util.Log.d("ErumiHiAnime", "After isValidTitleMatch filter: ${validResults.size} valid results")
+        if (validResults.isEmpty()) return@withContext emptyList()
 
         val best = pickBestMatch(cleanT, validResults) ?: return@withContext emptyList()
+        android.util.Log.d("ErumiHiAnime", "Best match: ${best.name} (id: ${best.id}, slug: ${best.slug})")
 
         try {
             // First try theme endpoint
@@ -144,6 +156,7 @@ class HiAnimeSource(private val client: OkHttpClient = ApiClient.okHttpClient) :
 
             episodes.sortedBy { it.episodeNumber }
         } catch (e: Exception) {
+            android.util.Log.e("ErumiHiAnime", "getEpisodes error for anime '$animeTitle': ${e.message}", e)
             emptyList()
         }
     }
@@ -331,6 +344,7 @@ class HiAnimeSource(private val client: OkHttpClient = ApiClient.okHttpClient) :
             }
             null
         } catch (e: Exception) {
+            android.util.Log.e("ErumiHiAnime", "resolveStream error for '$animeTitle' ep $episodeNumber: ${e.message}", e)
             null
         }
     }
@@ -341,8 +355,8 @@ class HiAnimeSource(private val client: OkHttpClient = ApiClient.okHttpClient) :
         val qInfo = FuzzyMatcher.parseSeasonAndPart(lowerQ)
         val qSub = FuzzyMatcher.extractSubtitleKeywords(lowerQ)
 
-        var best = candidates.first()
-        var bestScore = -99999.0
+        var best: HiAnimeSearchResult? = null
+        var bestScore = Double.NEGATIVE_INFINITY
 
         for (item in candidates) {
             val nameL = item.name.lowercase()
@@ -350,6 +364,7 @@ class HiAnimeSource(private val client: OkHttpClient = ApiClient.okHttpClient) :
             val cInfo = FuzzyMatcher.parseSeasonAndPart("$nameL ${slugL.replace('-', ' ')}")
 
             var sim = FuzzyMatcher.titleSimilarity(lowerQ, nameL) * 100.0
+            sim += FuzzyMatcher.wordOverlapRatio(lowerQ, "$nameL ${slugL.replace('-', ' ')}") * 80.0
 
             if (nameL == lowerQ) sim += 200.0
             else if (nameL.startsWith(lowerQ.take(maxOf(1, lowerQ.length / 2)))) sim += 30.0
@@ -367,7 +382,8 @@ class HiAnimeSource(private val client: OkHttpClient = ApiClient.okHttpClient) :
 
             if (qSub.isNotEmpty()) {
                 val fullWords = FuzzyMatcher.cleanWords("$nameL ${slugL.replace('-', ' ')}").toSet()
-                if (qSub.intersect(fullWords).isNotEmpty()) sim += 200.0
+                val subHits = qSub.intersect(fullWords)
+                sim += subHits.size * 80.0
             }
 
             if ("movie" in slugL && "movie" !in lowerQ) sim -= 60.0
@@ -379,6 +395,8 @@ class HiAnimeSource(private val client: OkHttpClient = ApiClient.okHttpClient) :
                 best = item
             }
         }
+        // Hard floor: refuse a weak "best" so we don't stream a different series.
+        if (best == null || bestScore < 55.0) return null
         return best
     }
 }

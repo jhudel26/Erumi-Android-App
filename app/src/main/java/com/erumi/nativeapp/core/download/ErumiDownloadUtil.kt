@@ -13,6 +13,7 @@ import androidx.media3.datasource.cache.NoOpCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadManager
+import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.scheduler.Requirements
 import com.erumi.nativeapp.core.database.AppDatabase
 import com.erumi.nativeapp.core.network.ErumiDataSourceFactory
@@ -103,9 +104,9 @@ object ErumiDownloadUtil {
                 getDatabaseProvider(context),
                 getDownloadCache(context),
                 upstreamFactory,
-                Executors.newFixedThreadPool(3)
+                Executors.newFixedThreadPool(4)
             ).apply {
-                maxParallelDownloads = 2
+                maxParallelDownloads = 3
                 addListener(object : DownloadManager.Listener {
                     override fun onDownloadChanged(
                         downloadManager: DownloadManager,
@@ -182,6 +183,44 @@ object ErumiDownloadUtil {
             getDownloadManager(context).requirements = req
         } catch (e: Exception) {
             Log.w(TAG, "Failed to update download requirements", e)
+        }
+    }
+
+    fun pauseDownload(context: Context, downloadId: String) {
+        try {
+            val downloadManager = getDownloadManager(context)
+            val currentDownloads = downloadManager.currentDownloads
+            val download = currentDownloads.firstOrNull { it.request.id == downloadId }
+            if (download != null) {
+                // Use 1 as the stop reason for user-initiated pause
+                downloadManager.setStopReason(downloadId, 1)
+                Log.d(TAG, "Paused download: $downloadId")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to pause download: $downloadId", e)
+        }
+    }
+
+    fun resumeDownload(context: Context, downloadId: String) {
+        try {
+            val downloadManager = getDownloadManager(context)
+            // Use 0 as the stop reason for none (no stop reason)
+            downloadManager.setStopReason(downloadId, 0)
+            // Media3 will automatically resume downloads when stop reason is cleared
+            Log.d(TAG, "Resumed download: $downloadId")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to resume download: $downloadId", e)
+        }
+    }
+
+    fun getDownloadState(context: Context, downloadId: String): Int? {
+        return try {
+            val downloadManager = getDownloadManager(context)
+            val currentDownloads = downloadManager.currentDownloads
+            currentDownloads.firstOrNull { it.request.id == downloadId }?.state
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get download state: $downloadId", e)
+            null
         }
     }
 

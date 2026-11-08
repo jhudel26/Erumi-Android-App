@@ -26,10 +26,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -317,6 +320,8 @@ fun PlayerScreen(
                         )
                         setFixedTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18f)
                         setVisibility(android.view.View.VISIBLE)
+                        // Add bottom margin to move subtitles away from the bottom
+                        setPadding(0, 0, 0, 50)
                     }
                     layoutParams = FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -329,8 +334,11 @@ fun PlayerScreen(
                     playerView.player = viewModel.exoPlayer
                 }
                 playerView.resizeMode = ASPECT_MODES[aspectModeIndex]
-                // Ensure subtitle view is visible when player updates
-                playerView.subtitleView?.setVisibility(android.view.View.VISIBLE)
+                // Ensure subtitle view is visible and properly configured when player updates
+                playerView.subtitleView?.apply {
+                    setVisibility(android.view.View.VISIBLE)
+                    setPadding(0, 0, 0, 50)
+                }
             },
             modifier = Modifier
                 .fillMaxSize()
@@ -406,7 +414,7 @@ fun PlayerScreen(
                     CircularProgressIndicator(color = ErumiPrimary, modifier = Modifier.size(48.dp))
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Resolving high-quality stream...",
+                        text = "Summoning your stream...",
                         style = MaterialTheme.typography.bodyMedium.copy(color = ErumiPrimaryText)
                     )
                 }
@@ -890,7 +898,13 @@ fun PlayerScreen(
                 onDismissRequest = { showSubtitleDialog = false },
                 title = { Text(text = "Select Subtitles", color = ErumiPrimaryText) },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         // Off option
                         Row(
                             modifier = Modifier
@@ -903,7 +917,7 @@ fun PlayerScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(text = "Off", color = ErumiPrimaryText)
-                            if (state.selectedSubtitleLang == "off") {
+                            if (state.selectedSubtitleId == "off") {
                                 Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = ErumiPrimary)
                             }
                         }
@@ -918,7 +932,7 @@ fun PlayerScreen(
                             )
                         } else {
                             state.availableSubtitles.forEach { sub ->
-                                val isSelected = sub.isSelected || (state.selectedSubtitleLang != "off" && state.selectedSubtitleLang.equals(sub.language, ignoreCase = true))
+                                val isSelected = state.selectedSubtitleId == sub.id
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -955,7 +969,13 @@ fun PlayerScreen(
                 onDismissRequest = { showSpeedDialog = false },
                 title = { Text(text = "Playback Speed", color = ErumiPrimaryText) },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         speeds.forEach { speed ->
                             Row(
                                 modifier = Modifier
@@ -990,7 +1010,13 @@ fun PlayerScreen(
                 onDismissRequest = { showAspectDialog = false },
                 title = { Text(text = "Aspect Ratio", color = ErumiPrimaryText) },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         ASPECT_LABELS.forEachIndexed { index, label ->
                             Row(
                                 modifier = Modifier

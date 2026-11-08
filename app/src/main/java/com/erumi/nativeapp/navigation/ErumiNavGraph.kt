@@ -36,15 +36,19 @@ import com.erumi.nativeapp.features.player.PlayerScreen
 import com.erumi.nativeapp.features.player.PlayerViewModel
 import com.erumi.nativeapp.features.search.SearchScreen
 import com.erumi.nativeapp.features.settings.SettingsScreen
+import com.erumi.nativeapp.features.settings.SettingsViewModel
 import com.erumi.nativeapp.features.watchlist.WatchlistScreen
 import com.erumi.nativeapp.ui.theme.BgCard
 import com.erumi.nativeapp.ui.theme.ErumiBackground
 import com.erumi.nativeapp.ui.theme.ErumiSurface
 import com.erumi.nativeapp.ui.theme.TealPrimary
 import com.erumi.nativeapp.ui.theme.TextSecondary
+import android.content.Intent
 
 @Composable
-fun ErumiNavGraph() {
+fun ErumiNavGraph(
+    onRequestBatteryOptimization: (Intent) -> Unit = {}
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -191,7 +195,20 @@ fun ErumiNavGraph() {
 
             // Settings
             composable(Screen.Settings.route) {
-                SettingsScreen()
+                val context = LocalContext.current
+                val app = context.applicationContext as android.app.Application
+                val settingsViewModel: SettingsViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return SettingsViewModel(app) as T
+                        }
+                    }
+                )
+                SettingsScreen(
+                    viewModel = settingsViewModel,
+                    onRequestBatteryOptimization = onRequestBatteryOptimization
+                )
             }
 
             // Anime Detail

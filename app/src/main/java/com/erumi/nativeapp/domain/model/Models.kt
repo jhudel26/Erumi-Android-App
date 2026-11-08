@@ -6,6 +6,7 @@ data class Anime(
     val englishName: String? = null,
     val romajiName: String? = null,
     val nativeName: String? = null,
+    val synonyms: List<String> = emptyList(),
     val poster: String? = null,
     val banner: String? = null,
     val description: String? = null,
@@ -41,7 +42,11 @@ data class SubtitleTrack(
     val groupIndex: Int = -1,
     val trackIndex: Int = -1,
     val isSelected: Boolean = false
-)
+) {
+    // Unique identifier for selection: URL for external, groupIndex_trackIndex for embedded
+    val id: String
+        get() = if (url.isNotBlank()) url else "${groupIndex}_$trackIndex"
+}
 
 data class StreamSource(
     val provider: String,

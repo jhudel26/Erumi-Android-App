@@ -30,9 +30,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.erumi.nativeapp.core.image.ImageResolver
+import com.erumi.nativeapp.domain.model.Anime
 import com.erumi.nativeapp.domain.model.DownloadItem
 import com.erumi.nativeapp.domain.model.DownloadStatus
+import com.erumi.nativeapp.ui.components.ErumiImagePlaceholder
+import com.erumi.nativeapp.ui.components.ShimmerLoadingPlaceholder
 import com.erumi.nativeapp.ui.theme.*
 
 @Composable
@@ -125,6 +130,22 @@ fun DownloadedDetailScreen(
             }
         } else {
             val context = LocalContext.current
+            val imageResolver = remember { ImageResolver(context) }
+            var resolvedPoster by remember { mutableStateOf(group.poster) }
+
+            LaunchedEffect(group.animeTitle, group.poster) {
+                if (group.poster.isNullOrBlank()) {
+                    val anime = Anime(
+                        id = group.animeId ?: group.animeTitle,
+                        title = group.animeTitle,
+                        poster = null
+                    )
+                    resolvedPoster = imageResolver.resolvePosterUrl(anime)
+                } else {
+                    resolvedPoster = group.poster
+                }
+            }
+
             val completedEps = group.episodes.filter { it.status == DownloadStatus.COMPLETED }.sortedBy { it.episodeNumber }
             val firstPlayableEp = completedEps.firstOrNull() ?: group.episodes.firstOrNull()
             val totalMb = group.totalDownloadedBytes / (1024 * 1024)
@@ -155,14 +176,23 @@ fun DownloadedDetailScreen(
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(BgSurfaceElevated)
                         ) {
-                            AsyncImage(
+                            SubcomposeAsyncImage(
                                 model = ImageRequest.Builder(context)
-                                    .data(group.poster)
+                                    .data(resolvedPoster)
                                     .crossfade(true)
                                     .build(),
                                 contentDescription = group.animeTitle,
                                 contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.fillMaxSize(),
+                                loading = {
+                                    ShimmerLoadingPlaceholder(modifier = Modifier.fillMaxSize())
+                                },
+                                error = {
+                                    ErumiImagePlaceholder(
+                                        modifier = Modifier.fillMaxSize(),
+                                        title = group.animeTitle
+                                    )
+                                }
                             )
                         }
 

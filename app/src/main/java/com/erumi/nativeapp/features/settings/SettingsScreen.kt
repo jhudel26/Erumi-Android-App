@@ -22,7 +22,8 @@ import com.erumi.nativeapp.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    viewModel: SettingsViewModel = viewModel()
+    viewModel: SettingsViewModel = viewModel(),
+    onRequestBatteryOptimization: (android.content.Intent) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     val settings = state.settings
@@ -95,6 +96,26 @@ fun SettingsScreen(
                         checked = settings.wifiOnlyDownloads,
                         onCheckedChange = { viewModel.setWifiOnlyDownloads(it) }
                     )
+                    HorizontalDivider(color = ErumiBorder, thickness = 0.5.dp)
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                        SettingsItem(
+                            icon = Icons.Default.BatteryChargingFull,
+                            title = "Background Downloads",
+                            subtitle = if (state.isIgnoringBatteryOptimizations) {
+                                "Downloads continue when app is minimized"
+                            } else {
+                                "Enable for uninterrupted background downloads"
+                            },
+                            onClick = {
+                                if (!state.isIgnoringBatteryOptimizations) {
+                                    val intent = viewModel.requestBatteryOptimization()
+                                    if (intent != null) {
+                                        onRequestBatteryOptimization(intent)
+                                    }
+                                }
+                            }
+                        )
+                    }
                 }
             }
 
@@ -116,7 +137,7 @@ fun SettingsScreen(
                     SettingsItem(
                         icon = Icons.Default.Info,
                         title = "App Version",
-                        subtitle = "Erumi v1.0.0"
+                        subtitle = "Erumi v1.0.1"
                     )
                     HorizontalDivider(color = ErumiBorder, thickness = 0.5.dp)
                     SettingsItem(

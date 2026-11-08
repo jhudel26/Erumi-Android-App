@@ -55,6 +55,52 @@ class FuzzyMatcherTest {
     }
 
     @Test
+    fun testRejectsUnrelatedIsekaiTitlesSharingWeakWords() {
+        // Regression: selecting Magic Repo Man must NOT match Easygoing Territory Defense
+        // just because both titles contain "magic" / "strongest".
+        val query =
+            "Magic Repo man: Dumped by my party, I'll cash in with a cute support fairy to become the strongest!"
+        val wrong =
+            "Easygoing Territory Defense by the Optimistic Lord: Production Magic Turns a Nameless Village into the Strongest Fortified City"
+        val wrongSlug =
+            "easygoing-territory-defense-by-the-optimistic-lord-production-magic-turns-a-nameless-village-into-the-strongest-fortified-city"
+
+        assertFalse(
+            "Unrelated isekai titles must not match via weak words",
+            FuzzyMatcher.isValidTitleMatch(query, wrong, wrongSlug)
+        )
+
+        // A real alternate / abbreviation of the same series should still pass.
+        assertTrue(
+            FuzzyMatcher.isValidTitleMatch(
+                query,
+                "Magic Repo Man: Dumped by My Party, I'll Cash In with a Cute Support Fairy to Become the Strongest!",
+                "magic-repo-man-dumped-by-my-party-ill-cash-in-with-a-cute-support-fairy-to-become-the-strongest"
+            )
+        )
+
+        // English ↔ romaji do not share words — EpisodeResolver must still try romaji as a
+        // HiAnime key after AniList English validates (do not require this to return true).
+        assertFalse(
+            FuzzyMatcher.isValidTitleMatch(
+                query,
+                "Kashita Maryoku wa [Revo Barai] de Kyousei Choushuu",
+                "kashita-maryoku-wa-revo-barai-de-kyousei-choushuu-10496"
+            )
+        )
+    }
+
+    @Test
+    fun testCleanTitleForHiAnimeKeepsBracketWords() {
+        val cleaned = FuzzyMatcher.cleanTitleForHiAnime(
+            "Kashita Maryoku wa [Revo Barai] de Kyousei Choushuu"
+        )
+        assertTrue(cleaned.contains("Revo Barai", ignoreCase = true))
+        assertFalse(cleaned.contains("["))
+        assertFalse(cleaned.contains("]"))
+    }
+
+    @Test
     fun testScoreSearchResult() {
         val query = "Frieren"
         val exactScore = FuzzyMatcher.scoreSearchResult(

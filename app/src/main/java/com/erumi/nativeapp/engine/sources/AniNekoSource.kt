@@ -61,19 +61,29 @@ class AniNekoSource(private val client: OkHttpClient = ApiClient.okHttpClient) :
 
             if (results.isEmpty()) return@withContext null
 
+            // Never fall back to the first search hit — shared weak words ("magic",
+            // "strongest") across isekai titles caused wrong-stream playback.
+            val validResults = results.filter {
+                FuzzyMatcher.isValidTitleMatch(cleanT, it.title, it.slug)
+            }
+            if (validResults.isEmpty()) return@withContext null
+
             val expected = cleanT.lowercase().replace(Regex("""[^a-z0-9]+"""), "-").trim('-')
             val expectedNoThe = expected.removePrefix("the-")
-            var bestSlug = results.first().slug
-            var bestScore = -999999
+            var bestSlug: String? = null
+            var bestScore = Int.MIN_VALUE
             val qInfo = FuzzyMatcher.parseSeasonAndPart(cleanT)
             val qSubs = FuzzyMatcher.extractSubtitleKeywords(cleanT)
 
-            for (r in results) {
+            for (r in validResults) {
                 var score = 0
                 val slug = r.slug.lowercase()
                 val slugNoThe = slug.removePrefix("the-")
                 val t = r.title.lowercase()
                 val cInfo = FuzzyMatcher.parseSeasonAndPart("$t ${slug.replace("-", " ")}")
+
+                score += (FuzzyMatcher.titleSimilarity(cleanT, r.title) * 100).toInt()
+                score += (FuzzyMatcher.wordOverlapRatio(cleanT, "$t ${slug.replace("-", " ")}") * 80).toInt()
 
                 if (slug == expected || slugNoThe == expectedNoThe) score += 2500
                 else if (t == cleanT.lowercase()) score += 2000
@@ -92,7 +102,8 @@ class AniNekoSource(private val client: OkHttpClient = ApiClient.okHttpClient) :
 
                 if (qSubs.isNotEmpty()) {
                     val fullWords = FuzzyMatcher.cleanWords("$t ${slug.replace("-", " ")}").toSet()
-                    if (qSubs.intersect(fullWords).isNotEmpty()) score += 800
+                    val subHits = qSubs.intersect(fullWords)
+                    score += subHits.size * 200
                 }
 
                 if ("movie" in slug || "movie" in t) score -= 700
@@ -103,6 +114,9 @@ class AniNekoSource(private val client: OkHttpClient = ApiClient.okHttpClient) :
                     bestSlug = r.slug
                 }
             }
+
+            // Hard floor: refuse a weak "best" so we don't stream a different series.
+            if (bestSlug.isNullOrBlank() || bestScore < 55) return@withContext null
 
             val watchUrl = "${Constants.ANINEKO_BASE_URL}/watch/$bestSlug/ep-$episodeNumber"
             val watchReq = Request.Builder()

@@ -98,4 +98,28 @@ class DownloadsViewModel(application: Application) : AndroidViewModel(applicatio
             libraryRepo.deleteDownload(id)
         }
     }
+
+    fun pauseDownload(id: String) {
+        viewModelScope.launch {
+            libraryRepo.pauseDownload(id)
+        }
+    }
+
+    fun resumeDownload(id: String) {
+        viewModelScope.launch {
+            libraryRepo.resumeDownload(id)
+        }
+    }
+
+    fun pauseAllDownloads() {
+        viewModelScope.launch {
+            libraryRepo.pauseAllDownloads()
+        }
+    }
+
+    fun resumeAllDownloads() {
+        viewModelScope.launch {
+            libraryRepo.resumeAllDownloads()
+        }
+    }
 }

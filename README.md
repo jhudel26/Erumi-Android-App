@@ -1,129 +1,103 @@
 <div align="center">
-  <img src="app/src/main/res/drawable/erumi_logo.png" alt="Erumi Native" width="120" />
 
-  # E R U M I &nbsp; N A T I V E &nbsp; エルミ
+<img src="app/src/main/res/drawable/erumi_logo.png" alt="Erumi Native" width="180" />
 
-  **100% STANDALONE NATIVE ANDROID ANIME STREAMING APPLICATION**
+# E R U M I &nbsp; N A T I V E &nbsp; エルミ
 
-  ---
+**A Cinema-Grade Standalone Android Anime Streaming Experience**
 
-  <br>
+---
 
-  <img src="https://img.shields.io/badge/PLATFORM-ANDROID-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android" />
-  <img src="https://img.shields.io/badge/LANGUAGE-KOTLIN-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin" />
-  <img src="https://img.shields.io/badge/UI-JETPACK%20COMPOSE-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose" />
-  <img src="https://img.shields.io/badge/MEDIA-MEDIA3%20EXOPLAYER-FF6F00?style=for-the-badge" alt="Media3 ExoPlayer" />
-  <img src="https://img.shields.io/badge/STORAGE-ROOM%20DB-009688?style=for-the-badge&logo=sqlite&logoColor=white" alt="Room DB" />
-  <img src="https://img.shields.io/badge/LICENSE-MIT-green?style=for-the-badge" alt="MIT License" />
 </div>
 
-<br>
+---
 
-> A cinema-grade, standalone native Android anime streaming platform built with Jetpack Compose, Material 3, and AndroidX Media3 ExoPlayer.
+## Overview
+
+> **Erumi Native** is a 100% standalone native Android anime streaming platform built with modern Android technologies. Eliminating all dependencies on external servers, companion PC applications, or WebView wrappers, it delivers a cinema-grade viewing experience entirely on your Android device.
+
+> [!CAUTION]
+> ## ⚠️ EDUCATIONAL PURPOSE ONLY — HEAVY DISCLAIMER
 >
-> **NO Windows PC needed. NO ErumiServer.exe needed. NO local Wi-Fi proxy needed. NO WebView.**
+> **PLEASE READ CAREFULLY BEFORE USING OR CONTRIBUTING:**
+>
+> 1. **No Content Ownership**: This project does **NOT** host, store, or distribute any copyrighted files (videos, images, or audio). All content is fetched in real-time from third-party publicly available sources (e.g., AllAnime, AniList, HiAnime).
+> 2. **Educational Use**: This source code is strictly for **educational and research purposes**. It demonstrates high-performance HTTP server architecture, HLS proxy streaming, and cross-platform web/APK deployment techniques.
+> 3. **Legal Liability**: The developers and contributors of this repository assume **NO LIABILITY** for any misuse of this software. Users are solely responsible for ensuring their usage complies with local laws and the Terms of Service of the source websites.
+> 4. **No Commercial Use**: This project is **NOT** for sale and should not be used for any commercial activities.
+
+### Key Highlights
+
+- **100% Standalone** – No Windows PC, no ErumiServer.exe, no local Wi-Fi proxy needed
+- **Cinema Player** – AndroidX Media3 ExoPlayer with HLS streaming, adaptive bitrate, and hardware acceleration
+- **Smart Search** – Multi-source fuzzy matching across AllAnime and AniList GraphQL APIs
+- **Offline Support** – Download episodes for offline viewing with zero internet connection
+- **Dark Cinema Design** – Material 3 theme optimized for OLED displays
+- **Anti-Hotlinking** – On-the-fly PNG disguise header stripping in the media pipeline
 
 ---
 
-## 📸 Screenshots
+## App Screenshots
 
-### Home Screen
-<img src="Screenshots/home.png" alt="Home Screen" width="300" />
-
-### Search Screen
-<img src="Screenshots/search.png" alt="Search Screen" width="300" />
-
-### Anime Details
-<img src="Screenshots/animedetailpage.png" alt="Anime Details" width="300" />
-
-### Video Player
-<img src="Screenshots/player.png" alt="Video Player" width="300" />
-
-### Downloads
-<img src="Screenshots/offlinedownload.png" alt="Downloads" width="300" />
-
-### Offline Detail
-<img src="Screenshots/offlinedetailpage.png" alt="Offline Detail" width="300" />
-
-### Settings
-<img src="Screenshots/settings.png" alt="Settings" width="300" />
+<table>
+  <tr>
+    <td align="center"><img src="Screenshots/home.png" alt="Home Screen" width="280" /><br><b>Home</b></td>
+    <td align="center"><img src="Screenshots/search.png" alt="Search Screen" width="280" /><br><b>Search</b></td>
+    <td align="center"><img src="Screenshots/animedetailpage.png" alt="Anime Details" width="280" /><br><b>Anime Details</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="Screenshots/settings.png" alt="Settings" width="280" /><br><b>Settings</b></td>
+    <td align="center"><img src="Screenshots/offlinedownload.png" alt="Downloads" width="280" /><br><b>Downloads</b></td>
+    <td align="center"><img src="Screenshots/offlinedetailpage.png" alt="Offline Detail" width="280" /><br><b>Offline Detail</b></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="3"><img src="Screenshots/player.png" alt="Video Player" width="600" height="350" /><br><b>Video Player</b></td>
+  </tr>
+</table>
 
 ---
 
-## ✨ Highlights & Key Features
+## Features
 
-### 📱 100% Standalone Execution
-All catalog scraping, search fuzzy matching, episode discovery, stream resolution, and anti-hotlink decryption execute directly on the Android phone. No external dependencies or companion applications required.
+### Cinema Video Player
 
-### 🎬 Cinema Video Player (AndroidX Media3 ExoPlayer)
-- **Native HLS (`.m3u8`) and adaptive bitrate playback** with auto-quality (1080p, 720p)
-- **Landscape fullscreen** with auto-orientation lock and immersive system bars
-- **On-the-fly Disguise Header Stripping**: Intercepts and slices leading `\x89PNG ... IEND` anti-hotlink disguises directly in the Media3 DataSource pipeline
-- **Subtitle selection** with WebVTT overlay tracks
-- **Sub / Dub instant audio switching**
-- **Playback speed selection** (0.5×, 0.75×, 1×, 1.25×, 1.5×, 2×)
-- **85-second intro skip button**
-- **Auto-next episode playback**
+- **Native HLS Streaming** – `.m3u8` adaptive bitrate playback (1080p, 720p, auto)
+- **Landscape Fullscreen** – Auto-orientation lock with immersive system bars
+- **Anti-Hotlinking Protection** – Real-time PNG disguise header stripping in Media3 DataSource
+- **Subtitle Support** – WebVTT overlay tracks with customizable size
+- **Audio Switching** – Instant toggle between Sub/Dub audio tracks
+- **Playback Controls** – Speed selection (0.5× - 2×), seek, play/pause
+- **Intro Skip** – One-tap 85-second intro skip button
+- **Auto-Next Episode** – Seamless automatic episode progression
 
-### ⚡ Advanced Anime Search & Scraper Engine
-- **Multi-source search** across **AllAnime GraphQL** and **AniList GraphQL**
-- **Smart Scoring & Fuzzy Matching**: Character bigram similarity, exact title match weighting, and strict season/part consistency checks
-- **Waterfall episode resolution**: Tries multiple sources (HiAnime → AniDB → AniNeko) for maximum availability
+### Advanced Search Engine
 
-### 📚 Local User Library (Room Database)
-- **Continue Watching**: Live episode resume cards with percentage progress
-- **Watch History**: Complete watch history logs with purge options
-- **Watchlist**: Personal bookmarking for your favorite anime
-- **Search History**: Instant search tag suggestions from recent queries
-- **Offline Downloads**: Download supported episodes for offline playback with zero internet connection
+- **Multi-Source Search** – Simultaneous queries across AllAnime and AniList GraphQL APIs
+- **Fuzzy Matching** – Character bigram similarity with exact title weighting
+- **Season Detection** – Smart identification of seasons and parts
+- **Waterfall Resolution** – Fallback through HiAnime → AniDB → AniNeko sources
+- **Search History** – Quick access to recent queries
 
-### 🎨 Dark Cinema Design System
-- Primary accent: `#14B8A6` (Teal)
-- Deep cinema background: `#090D12`
-- Responsive layouts, glass cards, and smooth Material 3 transitions
-- Optimized for OLED displays with true black backgrounds
+### Local User Library
+
+- **Continue Watching** – Resume cards with percentage progress tracking
+- **Watch History** – Complete logs with timestamps and purge options
+- **Watchlist** – Personal bookmarking for favorite anime
+- **Offline Downloads** – Full episode downloads for offline playback
+- **Storage Management** – Track download progress and storage usage
+
+### Dark Cinema Design System
+
+- **Primary Accent** – `#14B8A6` (Teal)
+- **Deep Background** – `#090D12` (Cinema Black)
+- **Material 3** – Modern responsive layouts with smooth transitions
+- **OLED Optimized** – True black backgrounds for power efficiency
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
-Erumi Native is structured around **Clean Architecture** and **MVVM** pattern:
-
-```
-app/
-  src/main/java/com/erumi/nativeapp/
-    ├── core/
-    │   ├── common/        # Constants, Resource wrapper
-    │   ├── database/      # Room AppDatabase, DAOs, and Entities
-    │   ├── datastore/     # UserPreferencesDataStore
-    │   ├── download/      # Media3 ErumiDownloadService and DownloadManager
-    │   ├── network/       # ApiClient, DisguiseHeaderDataSource, ErumiDataSourceFactory
-    │   └── utils/         # FuzzyMatcher, OtakuCipher
-    ├── data/
-    │   └── repository/    # AnimeRepository, UserLibraryRepository
-    ├── domain/
-    │   └── model/         # Business domain entities (Anime, Episode, StreamSource, etc.)
-    ├── engine/
-    │   ├── sources/       # AllAnimeSource, AniListSource, HiAnimeSource, AniDBSource, AniNekoSource
-    │   └── resolver/      # EpisodeResolver waterfall pipeline
-    ├── features/
-    │   ├── home/          # Home screen with Featured Banner & Continue Watching
-    │   ├── search/        # Search bar, recent tags, and poster results
-    │   ├── anime_details/ # Synopsis, relations, and episode drawer
-    │   ├── player/        # Media3 cinema player and custom landscape controls
-    │   ├── watchlist/     # Saved anime collection
-    │   ├── history/       # Watch history logs
-    │   ├── downloads/     # Offline download manager
-    │   └── settings/      # Playback, cache, and app settings
-    ├── navigation/        # Jetpack Compose Navigation graph
-    ├── ui/
-    │   ├── components/    # Reusable AnimeCards, HeroBanner, Skeletons
-    │   └── theme/         # Color, Type, and Theme definitions
-    ├── ErumiApplication.kt
-    └── MainActivity.kt
-```
-
-### Architecture Layers
+Erumi Native follows **Clean Architecture** principles with MVVM pattern:
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -142,260 +116,317 @@ app/
                             │
 ┌───────────────────────────┴────────────────────────────┐
 │                       DATA LAYER                       │
-│   • Data Sources / Scrapers (AllAnime, AniList,        │
-│     HiAnime, AniDB, AniNeko)                           │
+│   • Data Sources (AllAnime, AniList, HiAnime, etc.)    │
 │   • Room Database (AppDatabase & DAOs)                 │
 │   • DataStore Preferences                              │
 │   • Media3 DataSource & Download Service               │
 └────────────────────────────────────────────────────────┘
 ```
 
+### Project Structure
+
+```
+app/src/main/java/com/erumi/nativeapp/
+├── core/
+│   ├── common/        # Constants, Resource wrapper
+│   ├── database/      # Room AppDatabase, DAOs, Entities
+│   ├── datastore/     # UserPreferencesDataStore
+│   ├── download/      # Media3 ErumiDownloadService
+│   ├── network/       # ApiClient, DisguiseHeaderDataSource
+│   └── utils/         # FuzzyMatcher, OtakuCipher
+├── data/
+│   └── repository/    # AnimeRepository, UserLibraryRepository
+├── domain/
+│   └── model/         # Business domain entities
+├── engine/
+│   ├── sources/       # AllAnimeSource, AniListSource, etc.
+│   └── resolver/      # EpisodeResolver waterfall pipeline
+├── features/
+│   ├── home/          # Home screen with Featured Banner
+│   ├── search/        # Search bar and results grid
+│   ├── anime_details/ # Synopsis, relations, episode drawer
+│   ├── player/        # Media3 cinema player
+│   ├── watchlist/     # Saved anime collection
+│   ├── history/       # Watch history logs
+│   ├── downloads/     # Offline download manager
+│   └── settings/      # Playback and app settings
+├── navigation/        # Jetpack Compose Navigation graph
+├── ui/
+│   ├── components/    # Reusable UI components
+│   └── theme/         # Color, Type, Theme definitions
+├── ErumiApplication.kt
+└── MainActivity.kt
+```
+
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Core Technologies
-- **Language:** Kotlin 1.9.22
-- **UI Framework:** Jetpack Compose (BOM 2024.02.00) + Material 3
-- **Architecture:** MVVM with Clean Architecture
-- **Min SDK:** 26 (Android 8.0)
-- **Target SDK:** 34 (Android 14)
+
+| Component | Technology | Version |
+|-----------|-----------|---------|
+| **Language** | Kotlin | 1.9.22 |
+| **UI Framework** | Jetpack Compose | BOM 2024.02.00 |
+| **Design System** | Material 3 | - |
+| **Architecture** | MVVM + Clean Architecture | - |
+| **Min SDK** | Android 8.0 (API 26) | - |
+| **Target SDK** | Android 14 (API 34) | - |
 
 ### Media & Networking
-- **Media Engine:** AndroidX Media3 ExoPlayer 1.3.0
-  - `media3-exoplayer` - Core player
-  - `media3-exoplayer-hls` - HLS streaming support
-  - `media3-ui` - Player UI controls
-  - `media3-database` - Download caching
-  - `media3-datasource-okhttp` - Network data source
-- **Networking:** OkHttp 4.12.0 + Gson 2.10.1
-- **Image Loading:** Coil Compose 2.6.0
+
+| Purpose | Library | Version |
+|---------|---------|---------|
+| **Media Engine** | AndroidX Media3 ExoPlayer | 1.3.0 |
+| **HLS Support** | media3-exoplayer-hls | 1.3.0 |
+| **Player UI** | media3-ui | 1.3.0 |
+| **Downloads** | media3-database | 1.3.0 |
+| **Networking** | OkHttp | 4.12.0 |
+| **Serialization** | Gson | 2.10.1 |
+| **Image Loading** | Coil Compose | 2.6.0 |
 
 ### Data Storage
-- **Database:** AndroidX Room 2.6.1 (SQLite) with KAPT
-- **Preferences:** AndroidX DataStore Preferences 1.0.0
+
+| Purpose | Library | Version |
+|---------|---------|---------|
+| **Database** | AndroidX Room | 2.6.1 |
+| **Preferences** | AndroidX DataStore | 1.0.0 |
 
 ### Background Processing
-- **Background Work:** AndroidX WorkManager 2.9.0
-- **Coroutines:** kotlinx-coroutines-android 1.7.3
+
+| Purpose | Library | Version |
+|---------|---------|---------|
+| **Work Manager** | AndroidX WorkManager | 2.9.0 |
+| **Coroutines** | kotlinx-coroutines-android | 1.7.3 |
 
 ### Data Sources
-- **AllAnime** - GraphQL API for catalog and search
-- **AniList** - GraphQL API for metadata and relations
-- **HiAnime** - Primary video stream source with OtakuCipher decryption
-- **AniDB** - Secondary stream fallback
-- **AniNeko** - Tertiary stream fallback
+
+- AllAnime – GraphQL API for catalog and search
+- AniList – GraphQL API for metadata and relations
+- HiAnime – Primary video stream source with OtakuCipher decryption
+- AniDB – Secondary stream fallback
+- AniNeko – Tertiary stream fallback
 
 ---
 
-## 🗄️ Database Schema
+## Database Schema
 
 ### Room Database Entities
 
-| Entity Name | Primary Key | Description |
-| :--- | :--- | :--- |
-| `AnimeEntity` | `id: String` | Cached anime metadata, synopsis, titles, episodes count, and ratings |
-| `EpisodeEntity` | `id: String` | Cached episode numbers and provider IDs for fast offline lookup |
-| `WatchHistoryEntity` | `id: String` (`animeId_ep`) | Comprehensive watch history log with timestamps, position, and duration |
-| `ContinueWatchingEntity` | `animeId: String` | Active resume shelf items for unfinished episodes (>5s and <95% complete) |
-| `WatchlistEntity` | `animeId: String` | User-saved anime bookmarks with cover art and status |
-| `DownloadEntity` | `id: String` (`animeId_ep`) | Download queue status, percentage progress, local file paths, and byte sizes |
-| `SearchHistoryEntity` | `query: String` | Recent search queries ordered by `searchedAt DESC` |
+| Entity | Primary Key | Description |
+|--------|-------------|-------------|
+| `AnimeEntity` | `id: String` | Cached anime metadata, synopsis, titles, episodes count, ratings |
+| `EpisodeEntity` | `id: String` | Cached episode numbers and provider IDs |
+| `WatchHistoryEntity` | `id: String` | Watch history log with timestamps, position, duration |
+| `ContinueWatchingEntity` | `animeId: String` | Active resume shelf items (5s-95% progress) |
+| `WatchlistEntity` | `animeId: String` | User-saved anime bookmarks |
+| `DownloadEntity` | `id: String` | Download queue status, progress, file paths |
+| `SearchHistoryEntity` | `query: String` | Recent search queries |
 
 ### DataStore Preferences
 
 Stored in `erumi_preferences.preferences_pb`:
-- `preferred_quality`: String ("1080p", "720p", "Auto")
-- `auto_next_episode`: Boolean (default: true)
-- `default_audio`: String ("sub", "dub")
-- `default_subtitle_lang`: String ("en")
-- `subtitle_size`: Float (default: 1.0f)
-- `skip_intro`: Boolean (default: true)
-- `wifi_only_downloads`: Boolean (default: false)
-- `app_theme`: String ("Dark Cinema")
+
+- `preferred_quality` – "1080p", "720p", "Auto"
+- `auto_next_episode` – Boolean (default: true)
+- `default_audio` – "sub", "dub"
+- `default_subtitle_lang` – "en"
+- `subtitle_size` – Float (default: 1.0f)
+- `skip_intro` – Boolean (default: true)
+- `wifi_only_downloads` – Boolean (default: false)
+- `app_theme` – "Dark Cinema"
 
 ---
 
-## 🚀 Building the APK
+## Getting Started
 
 ### Prerequisites
-- JDK 17 or higher (or Android Studio JBR)
+
+- JDK 17 or higher
 - Android SDK (API 34)
 - Gradle 8.3.0
+- Android Studio (recommended)
 
 ### Clone the Repository
+
 ```bash
 git clone https://github.com/yourusername/erumi-native.git
 cd erumi-native
 ```
 
 ### Build Debug APK
+
 ```bash
 ./gradlew assembleDebug
 ```
 
-Or on Windows via batch script:
+Or on Windows:
+
 ```bat
 build_apk.bat
 ```
 
-Output location:
-`app/build/outputs/apk/debug/app-debug.apk`
+Output: `app/build/outputs/apk/debug/app-debug.apk`
 
 ### Build Release APK
+
 ```bash
 ./gradlew assembleRelease
 ```
 
-Output location:
-`app/build/outputs/apk/release/app-release-unsigned.apk`
+Output: `app/build/outputs/apk/release/app-release-unsigned.apk`
 
-**Note:** For release builds, you'll need to sign the APK with your keystore. Configure signing in `app/build.gradle.kts` under the `release` build type.
+**Note:** Configure signing in `app/build.gradle.kts` for release builds.
 
 ### Install on Device
+
 ```bash
 adb install app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ---
 
-## � Installation
+## Installation
 
 ### Option 1: Build from Source
-Follow the building instructions above to compile and install the APK.
+
+Follow the build instructions above to compile and install the APK.
 
 ### Option 2: Download Pre-built APK
-Download the latest release APK from the [Releases](https://github.com/yourusername/erumi-native/releases) page and install it on your Android device.
 
-**Note:** You may need to enable "Install from Unknown Sources" in your device settings to install the APK.
+Download the latest release from the [Releases](https://github.com/jhudel26/Erumi-Android-App/releases/tag/v1.0.0) page.
+
+**Note:** Enable "Install from Unknown Sources" in device settings.
 
 ---
 
-## 🎯 Features in Detail
+## Feature Details
 
 ### Video Playback
-- **Multi-quality streaming**: Automatically selects best quality based on network conditions
-- **HLS support**: Native `.m3u8` streaming with adaptive bitrate
-- **Subtitle tracks**: WebVTT subtitles with customizable size
-- **Audio switching**: Instant toggle between sub and dub audio
-- **Playback controls**: Play/pause, seek, speed control (0.5x - 2x)
-- **Intro skip**: One-tap skip 85-second intros
-- **Auto-advance**: Automatically plays next episode
+
+- Multi-quality streaming with adaptive bitrate
+- Native HLS (`.m3u8`) support
+- WebVTT subtitles with customizable size
+- Instant Sub/Dub audio switching
+- Playback speed control (0.5× - 2×)
+- One-tap intro skip (85 seconds)
+- Auto-advance to next episode
 
 ### Search & Discovery
-- **Fuzzy matching**: Smart search handles typos and alternative titles
-- **Multi-source**: Search across AllAnime and AniList simultaneously
-- **Season detection**: Correctly identifies different seasons and parts
-- **Recent searches**: Quick access to your search history
-- **Popular tags**: Browse trending anime categories
+
+- Fuzzy matching for typos and alternative titles
+- Multi-source search (AllAnime + AniList)
+- Season/part detection
+- Recent search history
+- Popular tag browsing
 
 ### Offline Downloads
-- **Full episode downloads**: Download complete episodes for offline viewing
-- **Download manager**: Track download progress and manage storage
-- **Offline playback**: Watch downloaded content without internet
-- **Wi-Fi only option**: Save mobile data by downloading only on Wi-Fi
+
+- Full episode downloads
+- Download progress tracking
+- Offline playback without internet
+- Wi-Fi only download option
 
 ### User Library
-- **Continue watching**: Resume from where you left off
-- **Watch history**: Complete log of all watched episodes
-- **Watchlist**: Bookmark anime to watch later
-- **Progress tracking**: Visual progress bars for each episode
+
+- Continue watching with progress tracking
+- Complete watch history logs
+- Watchlist for bookmarking
+- Visual progress indicators
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Network Settings
-The app uses OkHttp with custom configuration:
-- Connection pooling for efficient network usage
+
+- OkHttp with connection pooling
 - SSL tolerance for compatibility
 - Custom User-Agent headers
 
 ### Player Settings
-Customize your viewing experience in the Settings screen:
-- Preferred video quality (1080p, 720p, Auto)
-- Default audio language (Sub/Dub)
+
+Available in Settings screen:
+- Preferred video quality
+- Default audio language
 - Subtitle language and size
 - Auto-next episode toggle
 - Skip intro toggle
 
 ### Storage Management
-- Clear cache to free up space
+
+- Clear cache to free space
 - Manage downloaded episodes
 - View storage usage breakdown
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please follow these guidelines:
 
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit your changes** (`git commit -m 'Add some amazing feature'`)
-4. **Push to the branch** (`git push origin feature/amazing-feature`)
-5. **Open a Pull Request**
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ### Code Style
+
 - Follow Kotlin coding conventions
 - Use Jetpack Compose best practices
-- Write clean, readable code with meaningful names
+- Write clean, readable code
 - Add comments for complex logic
 
 ### Testing
-- Test your changes on multiple Android versions
-- Verify video playback works correctly
+
+- Test on multiple Android versions
+- Verify video playback
 - Test offline functionality
 - Check database operations
 
 ---
 
-## �📄 License
+## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
-
-**Note:** This project is strictly for educational and research purposes. Please respect the copyright of the content providers.
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 ---
 
-## 🙏 Acknowledgments
+## Support
 
-- **AndroidX Team** - For the excellent Jetpack libraries
-- **AllAnime** - For providing the anime catalog API
-- **AniList** - For comprehensive anime metadata
-- **HiAnime** - For video streaming sources
-- **Kotlin Team** - For the amazing programming language
+If you encounter issues or have questions:
 
----
-
-## 📞 Support
-
-If you encounter any issues or have questions:
 - Open an issue on GitHub
 - Check existing issues for solutions
-- Read the documentation in the `docs/` folder
+- Read documentation in project docs
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 ### Planned Features
+
 - [ ] Chromecast support
 - [ ] Background audio playback
 - [ ] Custom playlists
-- [ ] Sync watch history across devices
+- [ ] Cross-device sync
 - [ ] Dark/Light theme toggle
-- [ ] More language support for subtitles
-- [ ] Recommendation engine based on watch history
+- [ ] More subtitle languages
+- [ ] Recommendation engine
 
 ### Known Issues
-- Some anime may not have subtitles in all languages
-- Download speeds depend on your network connection
+
+- Some anime may lack subtitles in all languages
+- Download speeds depend on network connection
 - Certain episodes may have limited quality options
 
 ---
 
 <div align="center">
-  <p>Made with ❤️ by the Erumi Native Team</p>
-  <p>エルミ • E R U M I</p>
+
+Developed by [jhudel](https://jhudel.vercel.app/)
+
+エルミ • E R U M I
+
 </div>

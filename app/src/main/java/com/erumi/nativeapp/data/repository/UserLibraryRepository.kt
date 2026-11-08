@@ -10,6 +10,7 @@ import androidx.media3.exoplayer.offline.DownloadService
 import com.erumi.nativeapp.core.database.AppDatabase
 import com.erumi.nativeapp.core.database.entity.*
 import com.erumi.nativeapp.core.download.ErumiDownloadService
+import com.erumi.nativeapp.core.download.ErumiDownloadUtil
 import com.erumi.nativeapp.core.network.StreamRefererRegistry
 import com.erumi.nativeapp.domain.model.Anime
 import com.erumi.nativeapp.domain.model.DownloadItem
@@ -123,8 +124,23 @@ class UserLibraryRepository(
         db.continueWatchingDao().removeByAnimeId(animeId)
     }
 
+    /**
+     * Removes one watch-history row and, when Continue Watching points at the same
+     * anime + episode, clears that shelf entry so Home stays in sync.
+     */
+    suspend fun deleteHistoryEntry(animeId: String, episodeNumber: Int) = withContext(Dispatchers.IO) {
+        val historyId = "${animeId}_$episodeNumber"
+        db.watchHistoryDao().deleteById(historyId)
+        val continueItem = db.continueWatchingDao().getByAnimeId(animeId)
+        if (continueItem != null && continueItem.episodeNumber == episodeNumber) {
+            db.continueWatchingDao().removeByAnimeId(animeId)
+        }
+    }
+
     suspend fun clearHistory() = withContext(Dispatchers.IO) {
         db.watchHistoryDao().clearAllHistory()
+        // Home "Continue Watching" is fed by a separate table; clear it with history.
+        db.continueWatchingDao().clearAll()
     }
 
     // ── Continue Watching Shelf ──
@@ -433,6 +449,70 @@ class UserLibraryRepository(
             }
         } catch (e: Exception) {
             // Ignored
+        }
+    }
+
+    @OptIn(UnstableApi::class)
+    suspend fun pauseDownload(id: String) = withContext(Dispatchers.IO) {
+        try {
+            ErumiDownloadUtil.pauseDownload(context, id)
+            db.downloadDao().insertOrUpdateDownload(
+                db.downloadDao().getDownloadById(id)?.copy(
+                    status = DownloadStatus.PAUSED
+                ) ?: return@withContext
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("UserLibraryRepo", "Failed to pause download: $id", e)
+        }
+    }
+
+    @OptIn(UnstableApi::class)
+    suspend fun resumeDownload(id: String) = withContext(Dispatchers.IO) {
+        try {
+            ErumiDownloadUtil.resumeDownload(context, id)
+            db.downloadDao().insertOrUpdateDownload(
+                db.downloadDao().getDownloadById(id)?.copy(
+                    status = DownloadStatus.PENDING
+                ) ?: return@withContext
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("UserLibraryRepo", "Failed to resume download: $id", e)
+        }
+    }
+
+    suspend fun pauseAllDownloads() = withContext(Dispatchers.IO) {
+        try {
+            val activeDownloads = db.downloadDao().getAllDownloadsFlow().firstOrNull()?.filter {
+                it.status == DownloadStatus.DOWNLOADING || it.status == DownloadStatus.PENDING
+            } ?: emptyList()
+            activeDownloads.forEach { download ->
+                pauseDownload(download.id)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("UserLibraryRepo", "Failed to pause all downloads", e)
+        }
+    }
+
+    suspend fun resumeAllDownloads() = withContext(Dispatchers.IO) {
+        try {
+            val pausedDownloads = db.downloadDao().getAllDownloadsFlow().firstOrNull()?.filter {
+                it.status == DownloadStatus.PAUSED
+            } ?: emptyList()
+            pausedDownloads.forEach { download ->
+                resumeDownload(download.id)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("UserLibraryRepo", "Failed to resume all downloads", e)
+        }
+    }
+
+    suspend fun getActiveDownloadCount(): Int = withContext(Dispatchers.IO) {
+        try {
+            db.downloadDao().getAllDownloadsFlow().firstOrNull()?.count {
+                it.status == DownloadStatus.DOWNLOADING || it.status == DownloadStatus.PENDING
+            } ?: 0
+        } catch (e: Exception) {
+            0
         }
     }
 }

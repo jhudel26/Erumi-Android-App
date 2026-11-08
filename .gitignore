@@ -22,3 +22,11 @@ key
 # OS files
 .DS_Store
 Thumbs.db
+
+# APK and release artifacts
+*.apk
+*.aab
+**/release/
+**/debug/
+app/release/
+app/debug/

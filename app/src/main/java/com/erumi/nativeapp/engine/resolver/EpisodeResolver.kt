@@ -1,6 +1,7 @@
 package com.erumi.nativeapp.engine.resolver
 
 import com.erumi.nativeapp.core.utils.FuzzyMatcher
+import com.erumi.nativeapp.domain.model.Anime
 import com.erumi.nativeapp.domain.model.Episode
 import com.erumi.nativeapp.domain.model.StreamSource
 import com.erumi.nativeapp.engine.sources.AllAnimeSource
@@ -27,52 +28,81 @@ class EpisodeResolver(
         val cacheKey = cleanTitle.lowercase()
         episodesMemoryCache[cacheKey]?.let { return@withContext it }
 
+        android.util.Log.d("ErumiResolver", "getEpisodes for: $cleanTitle")
+
+        // Try normal HiAnime candidates first
+
         val candidateTitles = mutableListOf<String>()
         candidateTitles.add(cleanTitle)
+        candidateTitles.addAll(safePrefixCandidates(cleanTitle))
 
-        val qInfo = FuzzyMatcher.parseSeasonAndPart(cleanTitle)
-        val qSubs = FuzzyMatcher.extractSubtitleKeywords(cleanTitle)
-        val hasSpecificSeason = (qInfo.season != null && qInfo.season > 1) || (qInfo.part != null && qInfo.part > 1) || qSubs.isNotEmpty()
-
-        if (" - " in cleanTitle) {
-            val pref = cleanTitle.substringBefore(" - ").trim()
-            if (pref.isNotBlank() && (!hasSpecificSeason || qSubs.any { it in pref.lowercase() })) {
-                candidateTitles.add(pref)
-            }
-        }
-        if (":" in cleanTitle && !hasSpecificSeason) {
-            val pref = cleanTitle.substringBefore(":").trim()
-            if (pref.isNotBlank()) {
-                candidateTitles.add(pref)
-            }
-        }
-
-        for (cand in candidateTitles) {
+        for (cand in candidateTitles.distinct()) {
+            android.util.Log.d("ErumiResolver", "  Trying candidate: $cand")
             val eps = hiAnimeSource.getEpisodes(cand)
+            android.util.Log.d("ErumiResolver", "    -> ${eps.size} episodes found")
             if (eps.isNotEmpty()) {
                 episodesMemoryCache[cacheKey] = eps
                 return@withContext eps
             }
         }
 
-        // Search alternate titles
+        // Alternate catalog titles from a *validated* AniList hit.
+        // Important: once English matches AniList, trust that media's romaji/synonyms as
+        // HiAnime search keys. Do NOT require isValidTitleMatch(english, romaji) — those
+        // share almost no words (Magic Repo Man ↔ Kashita Maryoku wa Revo Barai…).
         val searchItems = aniListSource.search(cleanTitle)
-        val match = searchItems.firstOrNull()
+        android.util.Log.d("ErumiResolver", "AniList search returned ${searchItems.size} results")
+        val match = pickValidAniListMatch(cleanTitle, searchItems)
         if (match != null) {
-            val alts = listOfNotNull(match.englishName, match.romajiName, match.title).distinct()
-            for (alt in alts) {
-                if (!alt.equals(cleanTitle, ignoreCase = true)) {
-                    val eps = hiAnimeSource.getEpisodes(alt)
-                    if (eps.isNotEmpty()) {
-                        episodesMemoryCache[cacheKey] = eps
-                        return@withContext eps
+            android.util.Log.d("ErumiResolver", "AniList match: ${match.title} (en: ${match.englishName}, romaji: ${match.romajiName})")
+            val altKeys = trustedHiAnimeKeys(match)
+            android.util.Log.d("ErumiResolver", "Alternate keys: $altKeys")
+            for (alt in altKeys) {
+                if (alt.equals(cleanTitle, ignoreCase = true)) continue
+                if (!seasonPartCompatible(cleanTitle, alt)) continue
+                android.util.Log.d("ErumiResolver", "  Trying alt: $alt")
+                val eps = hiAnimeSource.getEpisodes(alt)
+                android.util.Log.d("ErumiResolver", "    -> ${eps.size} episodes found")
+                if (eps.isNotEmpty()) {
+                    episodesMemoryCache[cacheKey] = eps
+                    return@withContext eps
+                }
+            }
+        } else {
+            android.util.Log.d("ErumiResolver", "No AniList match found")
+        }
+
+        // SAFETY FALLBACK: Magic Repo Man romaji title via AniList ID
+        // AniList search returns 0 results for this anime, so we fetch by known ID
+        if (cleanTitle.contains("magic repo man", ignoreCase = true)) {
+            android.util.Log.d("ErumiResolver", "Trying Magic Repo Man fallback via AniList ID 202250")
+            val anilistMetadata = aniListSource.fetchById(202250)
+            if (anilistMetadata != null) {
+                android.util.Log.d("ErumiResolver", "  Fetched metadata from AniList: ${anilistMetadata.title} (romaji: ${anilistMetadata.romajiName})")
+                val candidates = buildCandidateTitlesFromMetadata(anilistMetadata, cleanTitle)
+                android.util.Log.d("ErumiResolver", "  Trying ${candidates.size} title candidates from metadata")
+                for (cand in candidates) {
+                    android.util.Log.d("ErumiResolver", "    - Trying: $cand")
+                    val romajiEps = hiAnimeSource.getEpisodes(cand)
+                    if (romajiEps.isNotEmpty()) {
+                        android.util.Log.d("ErumiResolver", "✓ Magic Repo Man ID-based fallback worked: ${romajiEps.size} episodes with title: $cand")
+                        episodesMemoryCache[cacheKey] = romajiEps
+                        return@withContext romajiEps
                     }
                 }
+            } else {
+                android.util.Log.d("ErumiResolver", "✗ Failed to fetch Magic Repo Man from AniList by ID")
             }
         }
 
-        // If not found in scrapers, generate real episode list using known catalog count
-        val count = totalCatalogEpisodes ?: match?.episodes ?: 12
+        // Last resort: fabricate only when we know a real aired/catalog count.
+        // Never invent "12" for airing shows with null AniList episodes (that caused
+        // Magic Repo Man to show 12 fake eps with blank epIds).
+        val count = when {
+            totalCatalogEpisodes != null && totalCatalogEpisodes > 0 -> totalCatalogEpisodes
+            match != null && match.episodes > 0 -> match.episodes
+            else -> 0
+        }
         if (count > 0) {
             val generated = (1..count).map { epNum ->
                 Episode(episodeNumber = epNum, title = "Episode $epNum")
@@ -81,7 +111,7 @@ class EpisodeResolver(
             return@withContext generated
         }
 
-        listOf(Episode(episodeNumber = 1, title = "Episode 1"))
+        emptyList()
     }
 
     suspend fun resolveStream(
@@ -93,75 +123,254 @@ class EpisodeResolver(
         val cacheKey = "$cleanTitle-$episodeNumber-$audio".lowercase()
         streamMemoryCache[cacheKey]?.let { return@withContext it }
 
-        // 1. Primary: HiAnime
+        android.util.Log.d("ErumiResolver", "Resolving stream for: $cleanTitle (ep $episodeNumber)")
+
+        // 1. Primary: HiAnime with selected title
         val hiStream = hiAnimeSource.resolveStream(cleanTitle, episodeNumber, audio)
         if (hiStream != null) {
+            android.util.Log.d("ErumiResolver", "✓ Primary HiAnime match found for: $cleanTitle")
             streamMemoryCache[cacheKey] = hiStream
             return@withContext hiStream
         }
+        android.util.Log.d("ErumiResolver", "✗ Primary HiAnime failed for: $cleanTitle")
 
-        // 1b. Try title prefixes if safe
-        val qInfo = FuzzyMatcher.parseSeasonAndPart(cleanTitle)
-        val qSubs = FuzzyMatcher.extractSubtitleKeywords(cleanTitle)
-        val hasSpecificSeason = (qInfo.season != null && qInfo.season > 1) || (qInfo.part != null && qInfo.part > 1) || qSubs.isNotEmpty()
-
-        if (" - " in cleanTitle || ":" in cleanTitle) {
-            var prefix: String? = null
-            if (" - " in cleanTitle) {
-                val cand = cleanTitle.substringBefore(" - ").trim()
-                if (!hasSpecificSeason || qSubs.any { it in cand.lowercase() }) {
-                    prefix = cand
-                }
-            } else if (":" in cleanTitle && !hasSpecificSeason) {
-                prefix = cleanTitle.substringBefore(":").trim()
-            }
-
-            if (!prefix.isNullOrBlank() && !prefix.equals(cleanTitle, ignoreCase = true)) {
-                val pStream = hiAnimeSource.resolveStream(prefix, episodeNumber, audio)
-                if (pStream != null) {
-                    streamMemoryCache[cacheKey] = pStream
-                    return@withContext pStream
-                }
+        // 1b. Safe title prefixes
+        for (prefix in safePrefixCandidates(cleanTitle)) {
+            if (prefix.equals(cleanTitle, ignoreCase = true)) continue
+            val pStream = hiAnimeSource.resolveStream(prefix, episodeNumber, audio)
+            if (pStream != null) {
+                android.util.Log.d("ErumiResolver", "✓ Prefix match found: $prefix")
+                streamMemoryCache[cacheKey] = pStream
+                return@withContext pStream
             }
         }
 
-        // 1c. Alternate names from AniList
+        // 1c. Trusted AniList alts (romaji / synonyms) — same as web_server get_stream 1c
         val searchItems = aniListSource.search(cleanTitle)
-        for (item in searchItems.take(3)) {
-            val candidates = listOfNotNull(item.nameOrTitle(), item.englishName, item.romajiName).distinct()
-            for (cand in candidates) {
-                if (!cand.equals(cleanTitle, ignoreCase = true)) {
-                    val altInfo = FuzzyMatcher.parseSeasonAndPart(cand)
-                    if (qInfo.season != null && altInfo.season != null && qInfo.season != altInfo.season) continue
-                    if (qInfo.part != null && altInfo.part != null && qInfo.part != altInfo.part) continue
+        android.util.Log.d("ErumiResolver", "AniList search returned ${searchItems.size} results for: $cleanTitle")
+        val match = pickValidAniListMatch(cleanTitle, searchItems)
+        if (match != null) {
+            android.util.Log.d("ErumiResolver", "✓ AniList match found: ${match.title} (en: ${match.englishName}, romaji: ${match.romajiName})")
+            val altKeys = trustedHiAnimeKeys(match)
+            android.util.Log.d("ErumiResolver", "Trying ${altKeys.size} alternate HiAnime keys: $altKeys")
+            for (cand in altKeys) {
+                if (cand.equals(cleanTitle, ignoreCase = true)) continue
+                if (!seasonPartCompatible(cleanTitle, cand)) continue
+                android.util.Log.d("ErumiResolver", "  - Trying alt key: $cand")
+                val altStream = hiAnimeSource.resolveStream(cand, episodeNumber, audio)
+                if (altStream != null) {
+                    android.util.Log.d("ErumiResolver", "✓ Alt key success: $cand")
+                    streamMemoryCache[cacheKey] = altStream
+                    return@withContext altStream
+                }
+            }
+        } else {
+            android.util.Log.d("ErumiResolver", "✗ No valid AniList match found for: $cleanTitle")
+        }
 
-                    val altStream = hiAnimeSource.resolveStream(cand, episodeNumber, audio)
-                    if (altStream != null) {
-                        streamMemoryCache[cacheKey] = altStream
-                        return@withContext altStream
+        // SAFETY FALLBACK: Magic Repo Man romaji title via AniList ID
+        // AniList search returns 0 results for this anime, so we fetch by known ID
+        if (cleanTitle.contains("magic repo man", ignoreCase = true)) {
+            android.util.Log.d("ErumiResolver", "Trying Magic Repo Man fallback via AniList ID 202250")
+            val anilistMetadata = aniListSource.fetchById(202250)
+            if (anilistMetadata != null) {
+                android.util.Log.d("ErumiResolver", "  Fetched metadata from AniList: ${anilistMetadata.title} (romaji: ${anilistMetadata.romajiName})")
+                val candidates = buildCandidateTitlesFromMetadata(anilistMetadata, cleanTitle)
+                android.util.Log.d("ErumiResolver", "  Trying ${candidates.size} title candidates from metadata")
+                for (cand in candidates) {
+                    android.util.Log.d("ErumiResolver", "    - Trying: $cand")
+                    val romajiStream = hiAnimeSource.resolveStream(cand, episodeNumber, audio)
+                    if (romajiStream != null) {
+                        android.util.Log.d("ErumiResolver", "✓ Magic Repo Man ID-based fallback stream worked with title: $cand")
+                        streamMemoryCache[cacheKey] = romajiStream
+                        return@withContext romajiStream
                     }
                 }
+            } else {
+                android.util.Log.d("ErumiResolver", "✗ Failed to fetch Magic Repo Man from AniList by ID")
             }
         }
 
-        // 2. Secondary: AniDB Fallback
+        // 2. AniDB Fallback (also try trusted alts)
         val anidbStream = aniDBSource.resolveStream(cleanTitle, episodeNumber, audio)
         if (anidbStream != null) {
             streamMemoryCache[cacheKey] = anidbStream
             return@withContext anidbStream
         }
+        if (match != null) {
+            for (cand in trustedHiAnimeKeys(match)) {
+                if (cand.equals(cleanTitle, ignoreCase = true)) continue
+                val alt = aniDBSource.resolveStream(cand, episodeNumber, audio)
+                if (alt != null) {
+                    streamMemoryCache[cacheKey] = alt
+                    return@withContext alt
+                }
+            }
+        }
 
-        // 3. Tertiary: AniNeko Fallback
+        // 3. AniNeko Fallback
         val aninekoStream = aniNekoSource.resolveStream(cleanTitle, episodeNumber, audio)
         if (aninekoStream != null) {
             streamMemoryCache[cacheKey] = aninekoStream
             return@withContext aninekoStream
         }
+        if (match != null) {
+            for (cand in trustedHiAnimeKeys(match)) {
+                if (cand.equals(cleanTitle, ignoreCase = true)) continue
+                val alt = aniNekoSource.resolveStream(cand, episodeNumber, audio)
+                if (alt != null) {
+                    streamMemoryCache[cacheKey] = alt
+                    return@withContext alt
+                }
+            }
+        }
 
         null
     }
 
-    private fun com.erumi.nativeapp.domain.model.Anime.nameOrTitle(): String {
-        return englishName ?: title
+    /**
+     * Builds candidate titles from AniList metadata, similar to web_server.py approach.
+     * Tries romaji, english, userPreferred, and safe prefix variants.
+     */
+    private fun buildCandidateTitlesFromMetadata(metadata: Anime, originalTitle: String): List<String> {
+        val candidates = mutableListOf<String>()
+
+        // Add title fields from metadata
+        metadata.romajiName?.trim()?.takeIf { it.isNotEmpty() }?.let { candidates.add(it) }
+        metadata.englishName?.trim()?.takeIf { it.isNotEmpty() }?.let { candidates.add(it) }
+        metadata.title.trim().takeIf { it.isNotEmpty() }?.let { candidates.add(it) }
+        metadata.nativeName?.trim()?.takeIf { it.isNotEmpty() }?.let { candidates.add(it) }
+
+        // Add synonyms
+        metadata.synonyms.forEach { syn ->
+            syn.trim().takeIf { it.isNotEmpty() }?.let { candidates.add(it) }
+        }
+
+        // Add cleaned romaji (remove brackets)
+        metadata.romajiName?.let { romaji ->
+            val cleaned = romaji.replace("[", " ").replace("]", " ").replace("【", " ").replace("】", " ")
+                .replace(Regex("""\s+"""), " ").trim()
+            if (cleaned.isNotEmpty() && cleaned != romaji) {
+                candidates.add(cleaned)
+            }
+        }
+
+        // Add safe prefix variants (like web_server.py)
+        val qInfo = FuzzyMatcher.parseSeasonAndPart(originalTitle)
+        val qSubs = FuzzyMatcher.extractSubtitleKeywords(originalTitle)
+        val hasSpecificSeason =
+            (qInfo.season != null && qInfo.season > 1) ||
+                (qInfo.part != null && qInfo.part > 1) ||
+                qSubs.isNotEmpty()
+
+        for (cand in candidates.toList()) {
+            if (" - " in cand) {
+                val pref = cand.split(" - ")[0].trim()
+                if (pref.isNotBlank() && pref !in candidates) {
+                    if (!hasSpecificSeason || qSubs.any { it in pref.lowercase() }) {
+                        candidates.add(pref)
+                    }
+                }
+            }
+            if (":" in cand && !hasSpecificSeason) {
+                val pref = cand.split(":")[0].trim()
+                if (pref.isNotBlank() && pref !in candidates) {
+                    candidates.add(pref)
+                }
+            }
+        }
+
+        return candidates.distinctBy { it.lowercase() }
+    }
+
+    /**
+     * HiAnime search keys taken from a validated AniList media object.
+     * Romaji/synonyms are intentionally not cross-checked with English word overlap.
+     */
+    private fun trustedHiAnimeKeys(match: Anime): List<String> {
+        return buildList {
+            match.englishName?.trim()?.takeIf { it.isNotEmpty() }?.let { add(it) }
+            match.romajiName?.trim()?.takeIf { it.isNotEmpty() }?.let { add(it) }
+            match.title.trim().takeIf { it.isNotEmpty() }?.let { add(it) }
+            match.nativeName?.trim()?.takeIf { it.isNotEmpty() }?.let { add(it) }
+            match.synonyms.forEach { syn ->
+                syn.trim().takeIf { it.isNotEmpty() }?.let { add(it) }
+            }
+            // Also try a version with brackets cleaned (for titles like [Revo Barai])
+            match.romajiName?.let { romaji ->
+                val cleaned = romaji.replace("[", " ").replace("]", " ").replace("【", " ").replace("】", " ")
+                    .replace(Regex("""\s+"""), " ").trim()
+                if (cleaned.isNotEmpty() && cleaned != romaji) {
+                    add(cleaned)
+                }
+            }
+        }.distinctBy { it.lowercase() }
+    }
+
+    private fun safePrefixCandidates(cleanTitle: String): List<String> {
+        val qInfo = FuzzyMatcher.parseSeasonAndPart(cleanTitle)
+        val qSubs = FuzzyMatcher.extractSubtitleKeywords(cleanTitle)
+        val hasSpecificSeason =
+            (qInfo.season != null && qInfo.season > 1) ||
+                (qInfo.part != null && qInfo.part > 1) ||
+                qSubs.isNotEmpty()
+
+        val out = mutableListOf<String>()
+        if (" - " in cleanTitle) {
+            val pref = cleanTitle.substringBefore(" - ").trim()
+            if (pref.isNotBlank() && (!hasSpecificSeason || qSubs.any { it in pref.lowercase() })) {
+                out.add(pref)
+            }
+        }
+        if (":" in cleanTitle && !hasSpecificSeason) {
+            val pref = cleanTitle.substringBefore(":").trim()
+            if (pref.isNotBlank()) out.add(pref)
+        }
+        return out
+    }
+
+    private fun seasonPartCompatible(query: String, candidate: String): Boolean {
+        val qInfo = FuzzyMatcher.parseSeasonAndPart(query)
+        val cInfo = FuzzyMatcher.parseSeasonAndPart(candidate)
+        if (qInfo.season != null && cInfo.season != null && qInfo.season != cInfo.season) return false
+        if (qInfo.part != null && cInfo.part != null && qInfo.part != cInfo.part) return false
+        return true
+    }
+
+    /**
+     * Picks the first AniList hit that is still a valid title match for [query].
+     * AniList SEARCH_MATCH alone is not trustworthy for long isekai titles that
+     * share generic words like "magic" / "strongest".
+     *
+     * For cases where English and Romaji share no words (e.g., Magic Repo Man ↔ Kashita Maryoku),
+     * we trust AniList's SEARCH_MATCH ordering as a fallback.
+     */
+    private fun pickValidAniListMatch(query: String, items: List<Anime>): Anime? {
+        val cleanQuery = FuzzyMatcher.cleanForSearch(query)
+        android.util.Log.d("ErumiResolver", "pickValidAniListMatch: query='$query', clean='$cleanQuery', items=${items.size}")
+
+        // First pass: strict word-based matching
+        for (item in items) {
+            val names = listOfNotNull(item.englishName, item.romajiName, item.title) + item.synonyms
+            android.util.Log.d("ErumiResolver", "  Checking item: ${item.title} (en: ${item.englishName}, romaji: ${item.romajiName})")
+            for (name in names) {
+                val isValid = FuzzyMatcher.isValidTitleMatch(query, name)
+                android.util.Log.d("ErumiResolver", "    - '$name' -> isValidTitleMatch=$isValid")
+                if (isValid) {
+                    android.util.Log.d("ErumiResolver", "  ✓ Strict match found: ${item.title}")
+                    return item
+                }
+            }
+        }
+
+        // Fallback: trust AniList's search ordering (SEARCH_MATCH sort)
+        // This handles English ↔ Romaji cases with no word overlap
+        if (items.isNotEmpty()) {
+            android.util.Log.d("ErumiResolver", "Using AniList SEARCH_MATCH fallback for: $query -> ${items.first().title}")
+            return items.first()
+        }
+
+        android.util.Log.d("ErumiResolver", "✗ No AniList match found")
+        return null
     }
 }

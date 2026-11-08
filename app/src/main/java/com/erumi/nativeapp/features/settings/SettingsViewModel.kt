@@ -1,11 +1,14 @@
 package com.erumi.nativeapp.features.settings
 
 import android.app.Application
+import android.content.Intent
+import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import coil.Coil
 import coil.annotation.ExperimentalCoilApi
 import com.erumi.nativeapp.core.datastore.UserPreferencesDataStore
+import com.erumi.nativeapp.core.download.DownloadHelper
 import com.erumi.nativeapp.core.download.ErumiDownloadUtil
 import com.erumi.nativeapp.domain.model.UserSettings
 import kotlinx.coroutines.Dispatchers
@@ -17,7 +20,8 @@ import kotlinx.coroutines.launch
 
 data class SettingsUiState(
     val settings: UserSettings = UserSettings(),
-    val cacheClearedMessage: String? = null
+    val cacheClearedMessage: String? = null,
+    val isIgnoringBatteryOptimizations: Boolean = true
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -32,6 +36,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 _uiState.update { it.copy(settings = s) }
                 ErumiDownloadUtil.updateRequirements(getApplication(), s.wifiOnlyDownloads)
             }
+        }
+        checkBatteryOptimization()
+    }
+
+    private fun checkBatteryOptimization() {
+        val isIgnoring = DownloadHelper.isIgnoringBatteryOptimizations(getApplication())
+        _uiState.update { it.copy(isIgnoringBatteryOptimizations = isIgnoring) }
+    }
+
+    fun requestBatteryOptimization(): Intent? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            DownloadHelper.getBatteryOptimizationIntent(getApplication())
+        } else {
+            null
         }
     }
 

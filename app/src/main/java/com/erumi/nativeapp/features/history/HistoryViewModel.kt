@@ -29,6 +29,12 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun deleteHistoryEntry(item: WatchProgress) {
+        viewModelScope.launch {
+            libraryRepo.deleteHistoryEntry(item.animeId, item.episodeNumber)
+        }
+    }
+
     fun clearAllHistory() {
         viewModelScope.launch {
             libraryRepo.clearHistory()

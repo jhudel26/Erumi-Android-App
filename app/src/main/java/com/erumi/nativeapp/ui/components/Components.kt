@@ -31,8 +31,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,8 +50,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.erumi.nativeapp.R
+import com.erumi.nativeapp.core.image.ImageResolver
 import com.erumi.nativeapp.domain.model.Anime
 import com.erumi.nativeapp.domain.model.WatchProgress
 import com.erumi.nativeapp.ui.theme.*
@@ -142,6 +147,26 @@ fun AnimeCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val imageResolver = remember { ImageResolver(context) }
+    var resolvedPoster by remember { mutableStateOf(anime.poster) }
+    var isLoading by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Only resolve if poster is null/blank
+    LaunchedEffect(anime.id, anime.poster) {
+        if (anime.poster.isNullOrBlank() && !isLoading) {
+            isLoading = true
+            coroutineScope.launch {
+                val resolved = imageResolver.resolvePosterUrl(anime)
+                resolvedPoster = resolved
+                isLoading = false
+            }
+        } else {
+            resolvedPoster = anime.poster
+        }
+    }
+
     PressScale(onClick = onClick, modifier = modifier.width(135.dp)) {
         Column(
             modifier = Modifier
@@ -155,15 +180,37 @@ fun AnimeCard(
                     .background(BgCard)
                     .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
             ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(anime.poster)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = anime.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+                // Show branded placeholder while resolving, otherwise show actual image
+                if (isLoading) {
+                    ErumiImagePlaceholder(
+                        modifier = Modifier.fillMaxSize(),
+                        title = anime.title
+                    )
+                } else {
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(resolvedPoster)
+                            .crossfade(true)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .build(),
+                        contentDescription = anime.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                        loading = {
+                            ErumiImagePlaceholder(
+                                modifier = Modifier.fillMaxSize(),
+                                title = anime.title
+                            )
+                        },
+                        error = {
+                            ErumiImagePlaceholder(
+                                modifier = Modifier.fillMaxSize(),
+                                title = anime.title
+                            )
+                        }
+                    )
+                }
 
                 // Dark vignette gradient overlay
                 Box(
@@ -256,6 +303,30 @@ fun ContinueWatchingCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val imageResolver = remember { ImageResolver(context) }
+    var resolvedPoster by remember { mutableStateOf(progress.poster) }
+    var isLoading by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(progress.animeId, progress.poster) {
+        if (progress.poster.isNullOrBlank() && !isLoading) {
+            isLoading = true
+            coroutineScope.launch {
+                val anime = com.erumi.nativeapp.domain.model.Anime(
+                    id = progress.animeId,
+                    title = progress.animeTitle,
+                    poster = null
+                )
+                val resolved = imageResolver.resolvePosterUrl(anime)
+                resolvedPoster = resolved
+                isLoading = false
+            }
+        } else {
+            resolvedPoster = progress.poster
+        }
+    }
+
     PressScale(onClick = onClick, modifier = modifier.width(220.dp).height(115.dp)) {
         Box(
             modifier = Modifier
@@ -263,15 +334,36 @@ fun ContinueWatchingCard(
                 .background(BgSurfaceElevated)
                 .border(1.dp, BorderSubtle, RoundedCornerShape(14.dp))
         ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(progress.poster)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = progress.animeTitle,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+            if (isLoading) {
+                ErumiImagePlaceholder(
+                    modifier = Modifier.fillMaxSize(),
+                    title = progress.animeTitle
+                )
+            } else {
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(resolvedPoster)
+                        .crossfade(true)
+                        .memoryCachePolicy(CachePolicy.ENABLED)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .build(),
+                    contentDescription = progress.animeTitle,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                    loading = {
+                        ErumiImagePlaceholder(
+                            modifier = Modifier.fillMaxSize(),
+                            title = progress.animeTitle
+                        )
+                    },
+                    error = {
+                        ErumiImagePlaceholder(
+                            modifier = Modifier.fillMaxSize(),
+                            title = progress.animeTitle
+                        )
+                    }
+                )
+            }
 
             Box(
                 modifier = Modifier
@@ -352,11 +444,27 @@ fun HeroCarousel(
 ) {
     if (spotlightAnime.isEmpty()) return
 
+    val context = LocalContext.current
+    val imageResolver = remember { ImageResolver(context) }
     val pagerState = rememberPagerState(
         initialPage = 0,
         pageCount = { spotlightAnime.size }
     )
     val coroutineScope = rememberCoroutineScope()
+
+    // Resolve images for spotlight anime
+    val resolvedImages = remember { mutableMapOf<String, String?>() }
+    val loadingStates = remember { mutableMapOf<String, Boolean>() }
+    LaunchedEffect(spotlightAnime) {
+        spotlightAnime.forEach { anime ->
+            loadingStates[anime.id] = true
+            coroutineScope.launch {
+                val resolved = imageResolver.resolveBannerUrl(anime) ?: imageResolver.resolvePosterUrl(anime)
+                resolvedImages[anime.id] = resolved
+                loadingStates[anime.id] = false
+            }
+        }
+    }
 
     // Auto-advance pager every 5 seconds when idle
     LaunchedEffect(spotlightAnime.size) {
@@ -394,20 +502,44 @@ fun HeroCarousel(
             modifier = Modifier.fillMaxSize()
         ) { page ->
             val anime = spotlightAnime.getOrNull(page) ?: return@HorizontalPager
+            val resolvedImage = resolvedImages[anime.id] ?: (anime.banner ?: anime.poster)
+            val isLoading = loadingStates[anime.id] ?: false
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .clickable { (onDetailsClick ?: onAnimeClick).invoke(anime) }
             ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(anime.banner ?: anime.poster)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = anime.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+                if (isLoading) {
+                    ErumiImagePlaceholder(
+                        modifier = Modifier.fillMaxSize(),
+                        title = anime.title
+                    )
+                } else {
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(resolvedImage)
+                            .crossfade(true)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .build(),
+                        contentDescription = anime.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                        loading = {
+                            ErumiImagePlaceholder(
+                                modifier = Modifier.fillMaxSize(),
+                                title = anime.title
+                            )
+                        },
+                        error = {
+                            ErumiImagePlaceholder(
+                                modifier = Modifier.fillMaxSize(),
+                                title = anime.title
+                            )
+                        }
+                    )
+                }
 
                 // Top subtle gradient for depth
                 Box(
@@ -590,6 +722,24 @@ fun SpotlightHeroBanner(
     onDetailsClick: () -> Unit = onWatchClick,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val imageResolver = remember { ImageResolver(context) }
+    var resolvedImage by remember { mutableStateOf(anime.banner ?: anime.poster) }
+    var isLoading by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(anime.id, anime.banner, anime.poster) {
+        if ((anime.banner.isNullOrBlank() && anime.poster.isNullOrBlank()) && !isLoading) {
+            isLoading = true
+            coroutineScope.launch {
+                resolvedImage = imageResolver.resolveBannerUrl(anime) ?: imageResolver.resolvePosterUrl(anime)
+                isLoading = false
+            }
+        } else {
+            resolvedImage = anime.banner ?: anime.poster
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -599,15 +749,30 @@ fun SpotlightHeroBanner(
             .border(1.dp, BorderSubtle, RoundedCornerShape(16.dp))
             .clickable { onDetailsClick() }
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(anime.banner ?: anime.poster)
-                .crossfade(true)
-                .build(),
-            contentDescription = anime.title,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+        if (isLoading) {
+            ShimmerLoadingPlaceholder(modifier = Modifier.fillMaxSize())
+        } else {
+            SubcomposeAsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(resolvedImage)
+                    .crossfade(true)
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .build(),
+                contentDescription = anime.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+                loading = {
+                    ShimmerLoadingPlaceholder(modifier = Modifier.fillMaxSize())
+                },
+                error = {
+                    ErumiImagePlaceholder(
+                        modifier = Modifier.fillMaxSize(),
+                        title = anime.title
+                    )
+                }
+            )
+        }
 
         // Gradient overlay
         Box(
@@ -815,6 +980,98 @@ fun ErrorView(
             Icon(imageVector = Icons.Default.Refresh, contentDescription = null, tint = BgMain)
             Spacer(modifier = Modifier.width(6.dp))
             Text(text = "Retry", color = BgMain, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+/**
+ * Erumi-branded placeholder for missing anime images.
+ * Uses the full body branding image with title on the right and animated shimmer effect.
+ */
+@Composable
+fun ErumiImagePlaceholder(
+    modifier: Modifier = Modifier,
+    title: String = "Erumi"
+) {
+    val shimmerColors = listOf(
+        Color.Transparent,
+        Color.White.copy(alpha = 0.15f),
+        Color.Transparent
+    )
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateAnim by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Restart),
+        label = "shimmerX"
+    )
+    val shimmerBrush = Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset(translateAnim - 200, 0f),
+        end = Offset(translateAnim + 200, 0f)
+    )
+
+    Box(
+        modifier = modifier
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        TealDark.copy(alpha = 0.8f),
+                        TealPrimary.copy(alpha = 0.6f)
+                    )
+                )
+            )
+    ) {
+        // Animated shimmer effect overlay
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(shimmerBrush)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Branding image on the left
+            AsyncImage(
+                model = R.drawable.fullbodybranding,
+                contentDescription = "Erumi",
+                modifier = Modifier.size(120.dp),
+                alpha = 0.8f
+            )
+
+            Spacer(modifier = Modifier.width(32.dp))
+
+            // Title on the right
+            Column(
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "ERUMI",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 3.sp
+                    ),
+                    color = BgMain.copy(alpha = 0.9f)
+                )
+                if (title.isNotBlank() && title != "Erumi") {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Medium
+                        ),
+                        color = BgMain.copy(alpha = 0.7f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
         }
     }
 }

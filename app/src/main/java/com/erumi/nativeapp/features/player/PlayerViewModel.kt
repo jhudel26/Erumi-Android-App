@@ -13,10 +13,7 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import androidx.media3.exoplayer.source.MergingMediaSource
-import androidx.media3.exoplayer.source.SingleSampleMediaSource
 import com.erumi.nativeapp.core.datastore.UserPreferencesDataStore
 import com.erumi.nativeapp.core.download.ErumiDownloadUtil
 import com.erumi.nativeapp.core.network.ErumiDataSourceFactory
@@ -44,6 +41,7 @@ data class PlayerUiState(
     val currentStream: StreamSource? = null,
     val availableSubtitles: List<SubtitleTrack> = emptyList(),
     val selectedSubtitleLang: String = "en",
+    val selectedSubtitleId: String = "off",
     val selectedAudio: String = "sub",
     val playbackSpeed: Float = 1.0f,
     val isPlaying: Boolean = false,
@@ -106,8 +104,15 @@ class PlayerViewModel(
                 _uiState.update {
                     it.copy(
                         selectedAudio = userSettings.defaultAudio,
+                        selectedSubtitleId = "off",
                         selectedSubtitleLang = userSettings.defaultSubtitleLang
                     )
+                }
+                // If default subtitle is not "off", we'll select the matching subtitle after it's loaded
+                if (userSettings.defaultSubtitleLang != "off") {
+                    // The selection will happen in loadEpisodesAndStream after subtitles are available
+                    // The default language preference is stored in userSettings.defaultSubtitleLang
+                    // and will be applied when embedded subtitles are detected via onTracksChanged
                 }
             } catch (e: Exception) {
                 // Keep default
@@ -234,10 +239,12 @@ class PlayerViewModel(
                 }
                 if (extracted.isNotEmpty()) {
                     _uiState.update { current ->
-                        val merged = extracted.map { ext ->
+                        // Merge external subtitles with embedded ones
+                        // Keep external subtitles (from stream.subtitles) and add embedded ones
+                        val externalSubs = current.availableSubtitles.filter { it.url.isNotBlank() }
+                        val embeddedSubs = extracted.map { ext ->
                             val match = current.availableSubtitles.firstOrNull {
-                                it.label.equals(ext.label, ignoreCase = true) ||
-                                (it.language.isNotBlank() && it.language.equals(ext.language, ignoreCase = true))
+                                it.id == ext.id
                             }
                             if (match != null) {
                                 ext.copy(label = match.label)
@@ -245,10 +252,47 @@ class PlayerViewModel(
                                 ext
                             }
                         }
-                        val active = merged.firstOrNull { it.isSelected }
+                        // Combine: external first, then embedded (avoiding duplicates by ID)
+                        val merged = externalSubs + embeddedSubs.filter { emb ->
+                            !externalSubs.any { ext -> ext.id == emb.id }
+                        }
+                        // Update selection state to match current player state
+                        val updatedMerged = merged.map { sub ->
+                            if (sub.url.isNotBlank()) {
+                                // External subtitle: check if ID matches selected
+                                sub.copy(isSelected = sub.id == current.selectedSubtitleId)
+                            } else {
+                                // Embedded subtitle: keep the isSelected from extraction
+                                sub
+                            }
+                        }
+                        // If no subtitle is selected and we have subtitles, select the first one
+                        val active = updatedMerged.firstOrNull { it.isSelected }
+                        val finalSelectedId = if (active != null) {
+                            active.id
+                        } else if (current.selectedSubtitleId != "off") {
+                            // Try to find a subtitle matching the selected ID
+                            val match = updatedMerged.firstOrNull { it.id == current.selectedSubtitleId }
+                            if (match != null) {
+                                match.id
+                            } else {
+                                // Select the first available subtitle
+                                updatedMerged.firstOrNull()?.id ?: current.selectedSubtitleId
+                            }
+                        } else {
+                            current.selectedSubtitleId
+                        }
+                        // If we found a match but it wasn't marked as selected, update the merged list
+                        val finalMerged = if (active == null && finalSelectedId != "off") {
+                            updatedMerged.map { sub ->
+                                sub.copy(isSelected = sub.id == finalSelectedId)
+                            }
+                        } else {
+                            updatedMerged
+                        }
                         current.copy(
-                            availableSubtitles = merged,
-                            selectedSubtitleLang = active?.language ?: current.selectedSubtitleLang
+                            availableSubtitles = finalMerged,
+                            selectedSubtitleId = finalSelectedId
                         )
                     }
                 }
@@ -318,11 +362,24 @@ class PlayerViewModel(
                 return@launch
             }
 
-            _uiState.update {
-                it.copy(
+            _uiState.update { current ->
+                val currentSelectedId = current.selectedSubtitleId
+                val currentSelectedLang = current.selectedSubtitleLang
+                current.copy(
                     currentStream = stream,
                     // Reset subtitle list to what the new stream provides — onTracksChanged will append embedded ones
-                    availableSubtitles = stream.subtitles,
+                    // Mark the subtitle matching the selected ID as selected, or select the first one if no match
+                    availableSubtitles = stream.subtitles.map { sub ->
+                        sub.copy(isSelected = sub.id == currentSelectedId)
+                    },
+                    // Update selectedSubtitleId to match an actual subtitle if the current one doesn't exist
+                    selectedSubtitleId = if (currentSelectedId != "off" && stream.subtitles.any { sub -> sub.id == currentSelectedId }) {
+                        currentSelectedId
+                    } else {
+                        // Try to match by language first, otherwise use first subtitle or off
+                        val langMatch = stream.subtitles.firstOrNull { it.language.equals(currentSelectedLang, ignoreCase = true) }
+                        langMatch?.id ?: stream.subtitles.firstOrNull()?.id ?: "off"
+                    },
                     selectedAudio = stream.audio
                 )
             }
@@ -344,7 +401,8 @@ class PlayerViewModel(
 
         // Attach external subtitle configurations to the MediaItem
         // This is the recommended approach for external subtitles
-        if (stream.subtitles.isNotEmpty()) {
+        if (stream.subtitles.isNotEmpty() && _uiState.value.selectedSubtitleId != "off") {
+            val selectedId = _uiState.value.selectedSubtitleId
             val subtitleConfigs = stream.subtitles.mapNotNull { sub ->
                 if (sub.url.isBlank()) return@mapNotNull null
                 val mimeType = when {
@@ -352,11 +410,13 @@ class PlayerViewModel(
                     sub.url.endsWith(".ttml", ignoreCase = true) || sub.url.endsWith(".xml", ignoreCase = true) -> MimeTypes.APPLICATION_TTML
                     else -> MimeTypes.TEXT_VTT
                 }
+                // Only mark ONE subtitle as default - the one matching selectedId
+                val isDefault = sub.id == selectedId
                 MediaItem.SubtitleConfiguration.Builder(Uri.parse(sub.url))
                     .setMimeType(mimeType)
                     .setLanguage(sub.language)
                     .setLabel(sub.label)
-                    .setSelectionFlags(if (sub.language.equals("en", ignoreCase = true) || sub.label.contains("English", ignoreCase = true)) C.SELECTION_FLAG_DEFAULT else 0)
+                    .setSelectionFlags(if (isDefault) C.SELECTION_FLAG_DEFAULT else 0)
                     .build()
             }
             if (subtitleConfigs.isNotEmpty()) {
@@ -454,28 +514,110 @@ class PlayerViewModel(
 
     fun selectSubtitle(sub: SubtitleTrack) {
         val player = exoPlayer ?: return
-        val builder = player.trackSelectionParameters.buildUpon()
-            .clearOverridesOfType(C.TRACK_TYPE_TEXT)
 
         if (sub.language == "off" || (sub.groupIndex == -1 && sub.label.equals("Off", ignoreCase = true))) {
             // Disable all text tracks
-            builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
-            _uiState.update { it.copy(selectedSubtitleLang = "off") }
-        } else {
-            // Enable text tracks
-            builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
-            val groups = player.currentTracks.groups
-            if (sub.groupIndex in groups.indices) {
-                val group = groups[sub.groupIndex]
-                builder.setOverrideForType(
-                    TrackSelectionOverride(group.mediaTrackGroup, listOf(sub.trackIndex))
+            val builder = player.trackSelectionParameters.buildUpon()
+                .clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+            player.trackSelectionParameters = builder.build()
+            _uiState.update {
+                it.copy(
+                    selectedSubtitleLang = "off",
+                    selectedSubtitleId = "off",
+                    availableSubtitles = it.availableSubtitles.map { it.copy(isSelected = false) }
                 )
-            } else if (sub.language.isNotBlank() && sub.language != "und") {
-                builder.setPreferredTextLanguage(sub.language)
             }
-            _uiState.update { it.copy(selectedSubtitleLang = sub.language) }
+        } else {
+            // For external subtitles, we need to reload the media with the selected subtitle marked as default
+            val currentStream = _uiState.value.currentStream
+            if (currentStream != null && sub.url.isNotBlank()) {
+                // Reload the stream with only the selected subtitle as default
+                val currentPosition = player.currentPosition
+                viewModelScope.launch {
+                    playStreamWithSelectedSubtitle(currentStream, sub, currentPosition)
+                }
+            } else {
+                // For embedded subtitles, use track selection parameters
+                val builder = player.trackSelectionParameters.buildUpon()
+                    .clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                val groups = player.currentTracks.groups
+                if (sub.groupIndex in groups.indices) {
+                    val group = groups[sub.groupIndex]
+                    builder.setOverrideForType(
+                        TrackSelectionOverride(group.mediaTrackGroup, listOf(sub.trackIndex))
+                    )
+                } else if (sub.language.isNotBlank() && sub.language != "und") {
+                    builder.setPreferredTextLanguage(sub.language)
+                }
+                player.trackSelectionParameters = builder.build()
+            }
+            _uiState.update {
+                it.copy(
+                    selectedSubtitleLang = sub.language,
+                    selectedSubtitleId = sub.id,
+                    availableSubtitles = it.availableSubtitles.map { track ->
+                        track.copy(isSelected = track.id == sub.id)
+                    }
+                )
+            }
         }
-        player.trackSelectionParameters = builder.build()
+    }
+
+    private fun playStreamWithSelectedSubtitle(stream: StreamSource, selectedSub: SubtitleTrack, startPosMs: Long) {
+        val player = ensurePlayerInitialized()
+        val referer = stream.referer.ifBlank { ErumiDataSourceFactory.defaultRefererFor(stream.url) }
+        val dataSourceFactory = ErumiDownloadUtil.buildReadOnlyCacheDataSource(getApplication(), referer)
+
+        // Build base MediaItem with URI
+        val mediaItemBuilder = MediaItem.Builder()
+            .setUri(Uri.parse(stream.url))
+
+        // Attach only the selected subtitle as default
+        val selectedSubs = stream.subtitles.filter { it.id == selectedSub.id }
+        if (selectedSubs.isNotEmpty()) {
+            val subtitleConfigs = selectedSubs.mapNotNull { sub ->
+                if (sub.url.isBlank()) return@mapNotNull null
+                val mimeType = when {
+                    sub.url.endsWith(".srt", ignoreCase = true) -> MimeTypes.APPLICATION_SUBRIP
+                    sub.url.endsWith(".ttml", ignoreCase = true) || sub.url.endsWith(".xml", ignoreCase = true) -> MimeTypes.APPLICATION_TTML
+                    else -> MimeTypes.TEXT_VTT
+                }
+                MediaItem.SubtitleConfiguration.Builder(Uri.parse(sub.url))
+                    .setMimeType(mimeType)
+                    .setLanguage(sub.language)
+                    .setLabel(sub.label)
+                    .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+                    .build()
+            }
+            if (subtitleConfigs.isNotEmpty()) {
+                mediaItemBuilder.setSubtitleConfigurations(subtitleConfigs)
+            }
+        }
+
+        val mediaItem = mediaItemBuilder.build()
+        val mediaSource = DefaultMediaSourceFactory(dataSourceFactory)
+            .createMediaSource(mediaItem)
+
+        player.setMediaSource(mediaSource)
+        player.prepare()
+        player.playWhenReady = true
+
+        if (startPosMs > 0) {
+            player.seekTo(startPosMs)
+        }
+
+        // Update UI state to reflect the selection
+        _uiState.update {
+            it.copy(
+                selectedSubtitleLang = selectedSub.language,
+                selectedSubtitleId = selectedSub.id,
+                availableSubtitles = it.availableSubtitles.map { track ->
+                    track.copy(isSelected = track.id == selectedSub.id)
+                }
+            )
+        }
     }
 
     fun selectSubtitle(language: String) {

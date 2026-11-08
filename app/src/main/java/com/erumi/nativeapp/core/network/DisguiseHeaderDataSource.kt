@@ -64,14 +64,17 @@ class DisguiseHeaderDataSource(private val upstream: DataSource) : DataSource {
 
             // Search for IEND + 4 bytes CRC
             var iendPos = -1
-            for (i in offset until (offset + bytesRead - 7)) {
-                if (buffer[i] == iendSignature[0] &&
-                    buffer[i + 1] == iendSignature[1] &&
-                    buffer[i + 2] == iendSignature[2] &&
-                    buffer[i + 3] == iendSignature[3]
-                ) {
-                    iendPos = i + 8 // 4 bytes 'IEND' + 4 bytes CRC
-                    break
+            val endOffset = offset + bytesRead - 4
+            if (endOffset > offset) {
+                for (i in offset until endOffset) {
+                    if (buffer[i] == iendSignature[0] &&
+                        buffer[i + 1] == iendSignature[1] &&
+                        buffer[i + 2] == iendSignature[2] &&
+                        buffer[i + 3] == iendSignature[3]
+                    ) {
+                        iendPos = i + 8 // 4 bytes 'IEND' + 4 bytes CRC
+                        break
+                    }
                 }
             }
 

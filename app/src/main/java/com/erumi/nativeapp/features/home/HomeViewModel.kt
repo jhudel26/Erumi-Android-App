@@ -29,7 +29,7 @@ data class HomeUiState(
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val animeRepo = AnimeRepository()
+    private val animeRepo = AnimeRepository(application)
     private val libraryRepo = UserLibraryRepository(application)
 
     private val _uiState = MutableStateFlow(HomeUiState())

@@ -20,9 +20,16 @@ object FuzzyMatcher {
         var t = title
         t = t.replace(Regex("""(?i)\((TV|Dub|Sub|Dubbed|Subbed|Uncensored|Batch|Raw|1080p|720p|480p)\)"""), "")
         t = t.replace(Regex("""(?i)\[(1080p|720p|480p|Batch|Dual Audio|Uncensored|Raw|Dub|Sub|ENG)\]"""), "")
+        // Keep bracketed words (e.g. "[Revo Barai]" / "【リボ払い】") — HiAnime slugs include them.
+        // Convert brackets to spaces but keep the content
         t = t.replace('[', ' ').replace(']', ' ')
+        t = t.replace('【', ' ').replace('】', ' ')
+        t = t.replace('「', ' ').replace('」', ' ')
+        t = t.replace('"', ' ').replace('"', ' ')
         t = t.replace(Regex("""\s+"""), " ")
-        return t.trim()
+        val result = t.trim()
+        android.util.Log.d("ErumiFuzzy", "cleanTitleForHiAnime: '$title' -> '$result'")
+        return result
     }
 
     fun cleanWords(s: String): List<String> {
@@ -72,18 +79,19 @@ object FuzzyMatcher {
         }
 
         // 2. Part / Cour: "part 2", "cour 2", "part ii"
-        val mPart = Regex("""\b(?:part|cour)\s*([0-9]{1,2})\b""").find(s)
-        if (mPart != null) {
-            part = mPart.groupValues[1].toIntOrNull()
+        // Use findAll to get the LAST part number (more specific cour part, not series part)
+        val allParts = Regex("""\b(?:part|cour)\s*([0-9]{1,2})\b""").findAll(s).toList()
+        if (allParts.isNotEmpty()) {
+            part = allParts.last().groupValues[1].toIntOrNull()
         } else {
-            val mPartNth = Regex("""\b([0-9]{1,2})(?:st|nd|rd|th)\s+(?:part|cour)\b""").find(s)
-            if (mPartNth != null) {
-                part = mPartNth.groupValues[1].toIntOrNull()
+            val allPartsNth = Regex("""\b([0-9]{1,2})(?:st|nd|rd|th)\s+(?:part|cour)\b""").findAll(s).toList()
+            if (allPartsNth.isNotEmpty()) {
+                part = allPartsNth.last().groupValues[1].toIntOrNull()
             } else {
-                val mPartRoman = Regex("""\b(?:part|cour)\s+(i|ii|iii|iv|v|vi|vii|viii|ix|x)\b""").find(s)
-                if (mPartRoman != null) {
+                val allPartsRoman = Regex("""\b(?:part|cour)\s+(i|ii|iii|iv|v|vi|vii|viii|ix|x)\b""").findAll(s).toList()
+                if (allPartsRoman.isNotEmpty()) {
                     val romanMap = mapOf("i" to 1, "ii" to 2, "iii" to 3, "iv" to 4, "v" to 5, "vi" to 6, "vii" to 7, "viii" to 8, "ix" to 9, "x" to 10)
-                    part = romanMap[mPartRoman.groupValues[1]]
+                    part = romanMap[allPartsRoman.last().groupValues[1]]
                 }
             }
         }
@@ -127,6 +135,20 @@ object FuzzyMatcher {
         return 2.0 * intersection.size / (bigramsA.size + bigramsB.size)
     }
 
+    /**
+     * Generic isekai/fantasy words that appear across many unrelated titles.
+     * A single shared weak word (e.g. "strongest" / "magic") must never be enough
+     * to accept a match.
+     */
+    private val weakTitleWords = setOf(
+        "strongest", "magic", "magical", "world", "another", "isekai", "hero", "heroes",
+        "girl", "girls", "boy", "boys", "lord", "city", "village", "party", "become",
+        "cute", "support", "turns", "nameless", "fortified", "production", "defense",
+        "territory", "optimistic", "easygoing", "adventure", "adventurer", "reincarnated",
+        "overpowered", "level", "skill", "skills", "dungeon", "slime", "demon", "king",
+        "queen", "prince", "princess", "season", "cour", "part", "episode", "tv"
+    )
+
     fun isValidTitleMatch(query: String, candidateName: String, candidateSlug: String = ""): Boolean {
         val qLower = query.lowercase().trim()
         val cLower = candidateName.lowercase().trim()
@@ -147,15 +169,18 @@ object FuzzyMatcher {
             return false
         }
 
+        if (qLower == cLower || qLower == cSlug) return true
+
+        val cFullWords = cleanWords("$cLower ${cSlug.replace('-', ' ')}").toSet()
         val qSub = extractSubtitleKeywords(qLower)
         if (qSub.isNotEmpty()) {
-            val cFullWords = cleanWords("$cLower ${cSlug.replace('-', ' ')}").toSet()
-            if (qSub.intersect(cFullWords).isEmpty()) {
+            val subOverlap = qSub.intersect(cFullWords)
+            val strongSubHits = subOverlap.filter { it !in weakTitleWords }
+            // Need a distinctive subtitle hit, or at least 2 shared subtitle words.
+            if (strongSubHits.isEmpty() && subOverlap.size < 2) {
                 return false
             }
         }
-
-        if (qLower == cLower || qLower == cSlug) return true
 
         val qWords = cleanWords(qLower)
         val cWords = cleanWords("$cLower ${cSlug.replace('-', ' ')}")
@@ -164,19 +189,35 @@ object FuzzyMatcher {
         val setQ = qWords.toSet()
         val setC = cWords.toSet()
         val overlap = setQ.intersect(setC)
+        val strongOverlap = overlap.filter { it !in weakTitleWords }
 
         val qPrefix = qLower.substringBefore(':').substringBefore(" - ").trim()
         val prefixWords = cleanWords(qPrefix)
         if (prefixWords.isNotEmpty()) {
             val prefixOverlap = prefixWords.toSet().intersect(setC)
             val prefixRatio = prefixOverlap.size.toDouble() / prefixWords.size
-            if (prefixRatio < 0.5) return false
+            // Prefix carries the series identity ("Magic Repo man" vs unrelated "… Magic …").
+            if (prefixRatio < 0.6) return false
+            val strongPrefixHits = prefixOverlap.filter { it !in weakTitleWords }
+            if (strongPrefixHits.isEmpty() && prefixWords.any { it !in weakTitleWords }) {
+                return false
+            }
         }
 
         val qRatio = overlap.size.toDouble() / setQ.size
-        if (qRatio < 0.35 && overlap.size < 2) return false
+        // Reject sparse / weak-only overlaps so unrelated long fantasy titles don't match.
+        if (qRatio < 0.45 && strongOverlap.size < 2) return false
+        if (strongOverlap.isEmpty() && overlap.size < 3) return false
 
         return true
+    }
+
+    /** Dice similarity on cleaned word sets; useful as a hard reject gate for resolvers. */
+    fun wordOverlapRatio(a: String, b: String): Double {
+        val wa = cleanWords(a).toSet()
+        val wb = cleanWords(b).toSet()
+        if (wa.isEmpty() || wb.isEmpty()) return 0.0
+        return wa.intersect(wb).size.toDouble() / wa.size
     }
 
     fun scoreSearchResult(query: String, title: String, englishName: String?, romajiName: String?, episodes: Int, type: String?, status: String?): Int {

@@ -51,10 +51,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,13 +64,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+import com.erumi.nativeapp.core.image.ImageResolver
 import com.erumi.nativeapp.domain.model.DownloadStatus
 import com.erumi.nativeapp.ui.components.ErrorView
+import com.erumi.nativeapp.ui.components.ErumiImagePlaceholder
+import com.erumi.nativeapp.ui.components.ShimmerLoadingPlaceholder
 import com.erumi.nativeapp.ui.theme.ErumiBackground
 import com.erumi.nativeapp.ui.theme.ErumiBorder
 import com.erumi.nativeapp.ui.theme.ErumiElevatedSurface
@@ -92,16 +100,33 @@ fun DetailScreen(
     onRelationClick: (String) -> Unit,
     viewModel: DetailViewModel
 ) {
+    val context = LocalContext.current
+    val imageResolver = remember { ImageResolver(context) }
+    val coroutineScope = rememberCoroutineScope()
     val state by viewModel.uiState.collectAsState()
     var isExpandedSynopsis by remember { mutableStateOf(false) }
     var isGridMode by remember { mutableStateOf(false) }
-    
+
     // Chunk episodes for sticky headers
     val episodeChunks = remember(state.episodes) {
         if (state.episodes.isEmpty()) emptyList()
         else state.episodes.chunked(EPISODE_CHUNK_SIZE)
     }
     val visibleEpisodes = episodeChunks.getOrNull(state.selectedChunk).orEmpty()
+
+    // Resolve images for the anime
+    var resolvedBanner by remember { mutableStateOf<String?>(null) }
+    var resolvedPoster by remember { mutableStateOf<String?>(null) }
+    var isLoadingImages by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state.anime) {
+        state.anime?.let { anime ->
+            isLoadingImages = true
+            resolvedBanner = imageResolver.resolveBannerUrl(anime)
+            resolvedPoster = imageResolver.resolvePosterUrl(anime)
+            isLoadingImages = false
+        }
+    }
 
     Scaffold(
         containerColor = ErumiBackground,
@@ -167,12 +192,36 @@ fun DetailScreen(
                             .fillMaxWidth()
                             .height(260.dp)
                     ) {
-                        AsyncImage(
-                            model = anime.banner ?: anime.poster,
-                            contentDescription = anime.title,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        if (isLoadingImages) {
+                            ErumiImagePlaceholder(
+                                modifier = Modifier.fillMaxSize(),
+                                title = anime.title
+                            )
+                        } else {
+                            SubcomposeAsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(resolvedBanner ?: resolvedPoster)
+                                    .crossfade(true)
+                                    .memoryCachePolicy(CachePolicy.ENABLED)
+                                    .diskCachePolicy(CachePolicy.ENABLED)
+                                    .build(),
+                                contentDescription = anime.title,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize(),
+                                loading = {
+                                    ErumiImagePlaceholder(
+                                        modifier = Modifier.fillMaxSize(),
+                                        title = anime.title
+                                    )
+                                },
+                                error = {
+                                    ErumiImagePlaceholder(
+                                        modifier = Modifier.fillMaxSize(),
+                                        title = anime.title
+                                    )
+                                }
+                            )
+                        }
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -205,12 +254,36 @@ fun DetailScreen(
                                     .background(ErumiElevatedSurface)
                                     .border(1.5.dp, ErumiBorder, RoundedCornerShape(12.dp))
                             ) {
-                                AsyncImage(
-                                    model = anime.poster,
-                                    contentDescription = anime.title,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
+                                if (isLoadingImages) {
+                                    ErumiImagePlaceholder(
+                                        modifier = Modifier.fillMaxSize(),
+                                        title = anime.title
+                                    )
+                                } else {
+                                    SubcomposeAsyncImage(
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(resolvedPoster)
+                                            .crossfade(true)
+                                            .memoryCachePolicy(CachePolicy.ENABLED)
+                                            .diskCachePolicy(CachePolicy.ENABLED)
+                                            .build(),
+                                        contentDescription = anime.title,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize(),
+                                        loading = {
+                                            ErumiImagePlaceholder(
+                                                modifier = Modifier.fillMaxSize(),
+                                                title = anime.title
+                                            )
+                                        },
+                                        error = {
+                                            ErumiImagePlaceholder(
+                                                modifier = Modifier.fillMaxSize(),
+                                                title = anime.title
+                                            )
+                                        }
+                                    )
+                                }
                             }
 
                             // Details Text
@@ -273,7 +346,9 @@ fun DetailScreen(
                         val buttonText = if (state.lastWatchedEpisode != null) "Resume Ep $targetEp" else "Play Episode 1"
 
                         Button(
-                            onClick = { onPlayEpisode(anime.title, targetEp, resumeMs, anime.id, anime.poster) },
+                            // Always play with the user-selected title (nav param), never a
+                            // swapped AniList hit — mirrors Erumi streaming android.
+                            onClick = { onPlayEpisode(animeTitle, targetEp, resumeMs, anime.id, resolvedPoster) },
                             colors = ButtonDefaults.buttonColors(containerColor = ErumiPrimary),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
@@ -469,7 +544,7 @@ fun DetailScreen(
                                     download = downloadItem,
                                     onClick = {
                                         val resume = if (isCurrent) state.lastWatchedPositionMs else 0L
-                                        onPlayEpisode(anime.title, ep.episodeNumber, resume, anime.id, anime.poster)
+                                        onPlayEpisode(animeTitle, ep.episodeNumber, resume, anime.id, resolvedPoster)
                                     },
                                     modifier = Modifier.weight(1f)
                                 )
@@ -497,7 +572,7 @@ fun DetailScreen(
                                 )
                                 .clickable {
                                     val resume = if (isCurrent) state.lastWatchedPositionMs else 0L
-                                    onPlayEpisode(anime.title, ep.episodeNumber, resume, anime.id, anime.poster)
+                                    onPlayEpisode(animeTitle, ep.episodeNumber, resume, anime.id, resolvedPoster)
                                 }
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -633,7 +708,7 @@ fun DetailScreen(
                                 IconButton(
                                     onClick = {
                                         val resume = if (isCurrent) state.lastWatchedPositionMs else 0L
-                                        onPlayEpisode(anime.title, ep.episodeNumber, resume, anime.id, anime.poster)
+                                        onPlayEpisode(animeTitle, ep.episodeNumber, resume, anime.id, resolvedPoster)
                                     },
                                     modifier = Modifier.size(36.dp)
                                 ) {

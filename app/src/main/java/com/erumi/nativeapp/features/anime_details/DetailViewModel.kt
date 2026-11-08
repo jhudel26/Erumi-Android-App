@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.erumi.nativeapp.core.datastore.UserPreferencesDataStore
+import com.erumi.nativeapp.core.utils.FuzzyMatcher
 import com.erumi.nativeapp.data.repository.AnimeRepository
 import com.erumi.nativeapp.data.repository.UserLibraryRepository
 import com.erumi.nativeapp.domain.model.Anime
@@ -45,26 +46,31 @@ class DetailViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            // 1. Fetch detailed metadata
+            // 1. Fetch detailed metadata for art/synopsis only.
+            // Playback identity MUST stay the user-selected title (same as Erumi streaming android).
+            // AniList SEARCH_MATCH can return a different long isekai title that only shares
+            // weak words ("magic"/"strongest") — never let that replace the play title.
             val metadata = animeRepo.getAnimeDetails(animeTitle)
-            val baseAnime = metadata ?: Anime(id = "temp_${animeTitle.hashCode()}", title = animeTitle)
+            val baseAnime = mergeMetadataPreservingSelectedTitle(animeTitle, metadata)
 
             _uiState.update { it.copy(anime = baseAnime) }
 
-            // 2. Observe watchlist status
+            // 2. Episode list: prefer HiAnime (via english/romaji/synonyms). Pass aired
+            // count from AniList only as a last-resort hint — never invent 12 eps.
+            try {
+                val eps = animeRepo.getEpisodes(
+                    animeTitle,
+                    totalEpisodes = baseAnime.episodes.takeIf { it > 0 }
+                )
+                _uiState.update { it.copy(episodes = eps, isLoading = false) }
+            } catch (_: Exception) {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+
+            // 3. Observe watchlist status
             libraryRepo.isInWatchlistFlow(baseAnime.id).collectLatest { inWatchlist ->
                 _uiState.update { it.copy(isInWatchlist = inWatchlist) }
             }
-        }
-
-        viewModelScope.launch {
-            // 3. Fetch episode list
-            try {
-                val eps = animeRepo.getEpisodes(animeTitle)
-                if (eps.isNotEmpty()) {
-                    _uiState.update { it.copy(episodes = eps, isLoading = false) }
-                }
-            } catch (_: Exception) {}
         }
 
         viewModelScope.launch {
@@ -171,5 +177,28 @@ class DetailViewModel(
 
     fun selectChunk(index: Int) {
         _uiState.update { it.copy(selectedChunk = index) }
+    }
+
+    /**
+     * Keep [selectedTitle] as the series identity for play/download/history.
+     * Only adopt AniList names when they validate as the same series.
+     * Romaji/synonyms are kept when English validates — HiAnime needs those keys.
+     */
+    private fun mergeMetadataPreservingSelectedTitle(selectedTitle: String, metadata: Anime?): Anime {
+        if (metadata == null) {
+            return Anime(id = "temp_${selectedTitle.hashCode()}", title = selectedTitle)
+        }
+        val nameCandidates = listOfNotNull(
+            metadata.englishName,
+            metadata.romajiName,
+            metadata.title
+        ) + metadata.synonyms
+        val isSameSeries = nameCandidates.any { FuzzyMatcher.isValidTitleMatch(selectedTitle, it) }
+        return if (isSameSeries) {
+            metadata.copy(title = selectedTitle)
+        } else {
+            // Wrong AniList hit — keep posters/synopsis empty rather than swap series.
+            Anime(id = "temp_${selectedTitle.hashCode()}", title = selectedTitle)
+        }
     }
 }
