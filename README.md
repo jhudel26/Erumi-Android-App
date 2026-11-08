@@ -383,9 +383,19 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 ---
 
-## Disclaimer
+## Caution
 
-This project is strictly for educational and research purposes. Please respect the copyright of content providers.
+**EDUCATIONAL PURPOSE ONLY — HEAVY DISCLAIMER**
+
+**PLEASE READ CAREFULLY BEFORE USING OR CONTRIBUTING:**
+
+**No Content Ownership:** This project does NOT host, store, or distribute any copyrighted files (videos, images, or audio). All content is fetched in real-time from third-party publicly available sources (e.g., AllAnime, AniList, HiAnime).
+
+**Educational Use:** This source code is strictly for educational and research purposes. It demonstrates high-performance HTTP server architecture, HLS proxy streaming, and cross-platform web/APK deployment techniques.
+
+**Legal Liability:** The developers and contributors of this repository assume NO LIABILITY for any misuse of this software. Users are solely responsible for ensuring their usage complies with local laws and the Terms of Service of the source websites.
+
+**No Commercial Use:** This project is NOT for sale and should not be used for any commercial activities.
 
 ---
 
