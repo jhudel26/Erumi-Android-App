@@ -8,33 +8,26 @@
 
 ---
 
-[![Android](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com)
-[![Kotlin](https://img.shields.io/badge/Language-Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
-[![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
-[![Media3](https://img.shields.io/badge/Media-Media3%20ExoPlayer-FF6F00?style=for-the-badge)](https://developer.android.com/media/media3)
-[![Room](https://img.shields.io/badge/Storage-Room%20DB-009688?style=for-the-badge&logo=sqlite&logoColor=white)](https://developer.android.com/training/data-storage/room)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
-
 </div>
 
 ---
 
-## ✨ Overview
+## Overview
 
 > **Erumi Native** is a 100% standalone native Android anime streaming platform built with modern Android technologies. Eliminating all dependencies on external servers, companion PC applications, or WebView wrappers, it delivers a cinema-grade viewing experience entirely on your Android device.
 
-### 🎯 Key Highlights
+### Key Highlights
 
-- **📱 100% Standalone** – No Windows PC, no ErumiServer.exe, no local Wi-Fi proxy needed
-- **🎬 Cinema Player** – AndroidX Media3 ExoPlayer with HLS streaming, adaptive bitrate, and hardware acceleration
-- **🔍 Smart Search** – Multi-source fuzzy matching across AllAnime and AniList GraphQL APIs
-- **📚 Offline Support** – Download episodes for offline viewing with zero internet connection
-- **🎨 Dark Cinema Design** – Material 3 theme optimized for OLED displays
-- **⚡ Anti-Hotlinking** – On-the-fly PNG disguise header stripping in the media pipeline
+- **100% Standalone** – No Windows PC, no ErumiServer.exe, no local Wi-Fi proxy needed
+- **Cinema Player** – AndroidX Media3 ExoPlayer with HLS streaming, adaptive bitrate, and hardware acceleration
+- **Smart Search** – Multi-source fuzzy matching across AllAnime and AniList GraphQL APIs
+- **Offline Support** – Download episodes for offline viewing with zero internet connection
+- **Dark Cinema Design** – Material 3 theme optimized for OLED displays
+- **Anti-Hotlinking** – On-the-fly PNG disguise header stripping in the media pipeline
 
 ---
 
-## 📸 App Screenshots
+## App Screenshots
 
 <table>
   <tr>
@@ -48,15 +41,15 @@
     <td align="center"><img src="Screenshots/offlinedetailpage.png" alt="Offline Detail" width="280" /><br><b>Offline Detail</b></td>
   </tr>
   <tr>
-    <td align="center" colspan="3"><img src="Screenshots/player.png" alt="Video Player" width="280" /><br><b>Video Player</b></td>
+    <td align="center" colspan="3"><img src="Screenshots/player.png" alt="Video Player" width="600" height="350" /><br><b>Video Player</b></td>
   </tr>
 </table>
 
 ---
 
-## 🚀 Features
+## Features
 
-### 🎬 Cinema Video Player
+### Cinema Video Player
 
 - **Native HLS Streaming** – `.m3u8` adaptive bitrate playback (1080p, 720p, auto)
 - **Landscape Fullscreen** – Auto-orientation lock with immersive system bars
@@ -67,7 +60,7 @@
 - **Intro Skip** – One-tap 85-second intro skip button
 - **Auto-Next Episode** – Seamless automatic episode progression
 
-### 🔍 Advanced Search Engine
+### Advanced Search Engine
 
 - **Multi-Source Search** – Simultaneous queries across AllAnime and AniList GraphQL APIs
 - **Fuzzy Matching** – Character bigram similarity with exact title weighting
@@ -75,7 +68,7 @@
 - **Waterfall Resolution** – Fallback through HiAnime → AniDB → AniNeko sources
 - **Search History** – Quick access to recent queries
 
-### 📚 Local User Library
+### Local User Library
 
 - **Continue Watching** – Resume cards with percentage progress tracking
 - **Watch History** – Complete logs with timestamps and purge options
@@ -83,7 +76,7 @@
 - **Offline Downloads** – Full episode downloads for offline playback
 - **Storage Management** – Track download progress and storage usage
 
-### 🎨 Dark Cinema Design System
+### Dark Cinema Design System
 
 - **Primary Accent** – `#14B8A6` (Teal)
 - **Deep Background** – `#090D12` (Cinema Black)
@@ -92,7 +85,7 @@
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 Erumi Native follows **Clean Architecture** principles with MVVM pattern:
 
@@ -157,7 +150,7 @@ app/src/main/java/com/erumi/nativeapp/
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Core Technologies
 
@@ -198,15 +191,15 @@ app/src/main/java/com/erumi/nativeapp/
 
 ### Data Sources
 
-- **AllAnime** – GraphQL API for catalog and search
-- **AniList** – GraphQL API for metadata and relations
-- **HiAnime** – Primary video stream source with OtakuCipher decryption
-- **AniDB** – Secondary stream fallback
-- **AniNeko** – Tertiary stream fallback
+- AllAnime – GraphQL API for catalog and search
+- AniList – GraphQL API for metadata and relations
+- HiAnime – Primary video stream source with OtakuCipher decryption
+- AniDB – Secondary stream fallback
+- AniNeko – Tertiary stream fallback
 
 ---
 
-## 🗄️ Database Schema
+## Database Schema
 
 ### Room Database Entities
 
@@ -235,7 +228,7 @@ Stored in `erumi_preferences.preferences_pb`:
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -283,7 +276,7 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 
 ---
 
-## 📱 Installation
+## Installation
 
 ### Option 1: Build from Source
 
@@ -297,7 +290,7 @@ Download the latest release from the [Releases](https://github.com/yourusername/
 
 ---
 
-## 🎯 Feature Details
+## Feature Details
 
 ### Video Playback
 
@@ -333,7 +326,7 @@ Download the latest release from the [Releases](https://github.com/yourusername/
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Network Settings
 
@@ -358,7 +351,7 @@ Available in Settings screen:
 
 ---
 
-##  Contributing
+## Contributing
 
 Contributions are welcome! Please follow these guidelines:
 
@@ -384,7 +377,7 @@ Contributions are welcome! Please follow these guidelines:
 
 ---
 
-## 📄 License
+## License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
@@ -392,8 +385,7 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 ---
 
-
-##  Support
+## Support
 
 If you encounter issues or have questions:
 
@@ -403,7 +395,7 @@ If you encounter issues or have questions:
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 ### Planned Features
 
