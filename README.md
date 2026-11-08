@@ -43,12 +43,12 @@
     <td align="center"><img src="Screenshots/animedetailpage.png" alt="Anime Details" width="280" /><br><b>Anime Details</b></td>
   </tr>
   <tr>
-    <td align="center"><img src="Screenshots/player.png" alt="Video Player" width="280" /><br><b>Video Player</b></td>
+    <td align="center"><img src="Screenshots/settings.png" alt="Settings" width="280" /><br><b>Settings</b></td>
     <td align="center"><img src="Screenshots/offlinedownload.png" alt="Downloads" width="280" /><br><b>Downloads</b></td>
     <td align="center"><img src="Screenshots/offlinedetailpage.png" alt="Offline Detail" width="280" /><br><b>Offline Detail</b></td>
   </tr>
   <tr>
-    <td align="center"><img src="Screenshots/settings.png" alt="Settings" width="280" /><br><b>Settings</b></td>
+    <td align="center"><img src="Screenshots/player.png" alt="Video Player" width="280" /><br><b>Video Player</b></td>
   </tr>
 </table>
 
