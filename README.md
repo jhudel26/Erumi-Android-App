@@ -48,7 +48,7 @@
     <td align="center"><img src="Screenshots/offlinedetailpage.png" alt="Offline Detail" width="280" /><br><b>Offline Detail</b></td>
   </tr>
   <tr>
-    <td align="center"><img src="Screenshots/player.png" alt="Video Player" width="200" /><br><b>Video Player</b></td>
+    <td align="center" colspan="3"><img src="Screenshots/player.png" alt="Video Player" width="280" /><br><b>Video Player</b></td>
   </tr>
 </table>
 
@@ -358,7 +358,7 @@ Available in Settings screen:
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions are welcome! Please follow these guidelines:
 
@@ -392,17 +392,8 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 ---
 
-## 🙏 Acknowledgments
 
-- **AndroidX Team** – Excellent Jetpack libraries
-- **AllAnime** – Anime catalog API
-- **AniList** – Comprehensive anime metadata
-- **HiAnime** – Video streaming sources
-- **Kotlin Team** – Amazing programming language
-
----
-
-## 📞 Support
+##  Support
 
 If you encounter issues or have questions:
 
@@ -434,7 +425,7 @@ If you encounter issues or have questions:
 
 <div align="center">
 
-**Made with ❤️ by the Erumi Native Team**
+Developed by [jhudel](https://jhudel.vercel.app/)
 
 エルミ • E R U M I
 
