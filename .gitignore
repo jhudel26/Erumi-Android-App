@@ -1,0 +1,24 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Android Studio
+.idea/
+*.iml
+
+# Android SDK
+local.properties
+
+# Signing keys
+*.jks
+*.keystore
+keystore.properties
+key
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

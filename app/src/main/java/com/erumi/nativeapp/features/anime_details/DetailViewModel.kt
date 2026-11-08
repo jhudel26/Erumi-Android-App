@@ -1,0 +1,175 @@
+package com.erumi.nativeapp.features.anime_details
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.erumi.nativeapp.core.datastore.UserPreferencesDataStore
+import com.erumi.nativeapp.data.repository.AnimeRepository
+import com.erumi.nativeapp.data.repository.UserLibraryRepository
+import com.erumi.nativeapp.domain.model.Anime
+import com.erumi.nativeapp.domain.model.DownloadItem
+import com.erumi.nativeapp.domain.model.DownloadStatus
+import com.erumi.nativeapp.domain.model.Episode
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+
+data class DetailUiState(
+    val anime: Anime? = null,
+    val episodes: List<Episode> = emptyList(),
+    val downloadsMap: Map<Int, DownloadItem> = emptyMap(),
+    val isInWatchlist: Boolean = false,
+    val lastWatchedEpisode: Int? = null,
+    val lastWatchedPositionMs: Long = 0L,
+    val isLoading: Boolean = true,
+    val error: String? = null,
+    val selectedChunk: Int = 0
+)
+
+class DetailViewModel(
+    application: Application,
+    private val animeTitle: String
+) : AndroidViewModel(application) {
+
+    private val animeRepo = AnimeRepository()
+    private val libraryRepo = UserLibraryRepository(application)
+    private val preferencesDataStore = UserPreferencesDataStore(application)
+
+    private val _uiState = MutableStateFlow(DetailUiState())
+    val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
+
+    init {
+        loadDetails()
+    }
+
+    fun loadDetails() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
+            // 1. Fetch detailed metadata
+            val metadata = animeRepo.getAnimeDetails(animeTitle)
+            val baseAnime = metadata ?: Anime(id = "temp_${animeTitle.hashCode()}", title = animeTitle)
+
+            _uiState.update { it.copy(anime = baseAnime) }
+
+            // 2. Observe watchlist status
+            libraryRepo.isInWatchlistFlow(baseAnime.id).collectLatest { inWatchlist ->
+                _uiState.update { it.copy(isInWatchlist = inWatchlist) }
+            }
+        }
+
+        viewModelScope.launch {
+            // 3. Fetch episode list
+            try {
+                val eps = animeRepo.getEpisodes(animeTitle)
+                if (eps.isNotEmpty()) {
+                    _uiState.update { it.copy(episodes = eps, isLoading = false) }
+                }
+            } catch (_: Exception) {}
+        }
+
+        viewModelScope.launch {
+            // 4. Check continue watching state for this anime
+            libraryRepo.continueWatchingFlow.collect { list ->
+                val progress = list.firstOrNull { it.animeTitle.equals(animeTitle, ignoreCase = true) }
+                if (progress != null) {
+                    _uiState.update {
+                        it.copy(
+                            lastWatchedEpisode = progress.episodeNumber,
+                            lastWatchedPositionMs = progress.positionMs
+                        )
+                    }
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            // 5. Observe download statuses for episodes of this anime
+            libraryRepo.downloadsFlow.collect { downloads ->
+                val filtered = downloads
+                    .filter { it.animeTitle.equals(animeTitle, ignoreCase = true) }
+                    .associateBy { it.episodeNumber }
+                _uiState.update { current ->
+                    val resolvedEpisodes = if (current.episodes.isEmpty() && filtered.isNotEmpty()) {
+                        filtered.keys.sorted().map { epNum ->
+                            Episode(episodeNumber = epNum, title = "Episode $epNum")
+                        }
+                    } else {
+                        current.episodes
+                    }
+                    current.copy(downloadsMap = filtered, episodes = resolvedEpisodes, isLoading = false)
+                }
+            }
+        }
+    }
+
+    fun toggleWatchlist() {
+        val currentAnime = _uiState.value.anime ?: return
+        viewModelScope.launch {
+            libraryRepo.toggleWatchlist(currentAnime)
+        }
+    }
+
+    fun downloadEpisode(episodeNumber: Int) {
+        val currentAnime = _uiState.value.anime ?: return
+        val existing = _uiState.value.downloadsMap[episodeNumber]
+        if (existing?.status == DownloadStatus.COMPLETED || existing?.status == DownloadStatus.DOWNLOADING) {
+            return
+        }
+
+        // Immediate visual response: switch from FAILED/idle to PENDING
+        val tempDownloads = _uiState.value.downloadsMap.toMutableMap()
+        tempDownloads[episodeNumber] = DownloadItem(
+            id = "${currentAnime.id}_$episodeNumber",
+            animeId = currentAnime.id,
+            animeTitle = currentAnime.title,
+            episodeNumber = episodeNumber,
+            poster = currentAnime.poster,
+            streamUrl = "",
+            status = DownloadStatus.PENDING,
+            progress = 0
+        )
+        _uiState.update { it.copy(downloadsMap = tempDownloads) }
+
+        viewModelScope.launch {
+            val audioPref = try { preferencesDataStore.userSettingsFlow.first().defaultAudio } catch (e: Exception) { "sub" }
+            val stream = animeRepo.resolveStream(animeTitle, episodeNumber, audioPref)
+            if (stream == null) {
+                val failedDownloads = _uiState.value.downloadsMap.toMutableMap()
+                failedDownloads[episodeNumber] = DownloadItem(
+                    id = "${currentAnime.id}_$episodeNumber",
+                    animeId = currentAnime.id,
+                    animeTitle = currentAnime.title,
+                    episodeNumber = episodeNumber,
+                    poster = currentAnime.poster,
+                    streamUrl = "",
+                    status = DownloadStatus.FAILED,
+                    error = "Stream not available"
+                )
+                _uiState.update { it.copy(downloadsMap = failedDownloads) }
+                return@launch
+            }
+
+            libraryRepo.startDownload(
+                animeId = currentAnime.id,
+                animeTitle = currentAnime.title,
+                poster = currentAnime.poster,
+                episodeNumber = episodeNumber,
+                streamUrl = stream.url,
+                referer = stream.referer,
+                subtitles = stream.subtitles
+            )
+        }
+    }
+
+    fun deleteDownload(episodeNumber: Int) {
+        val currentAnime = _uiState.value.anime ?: return
+        val downloadId = "${currentAnime.id}_$episodeNumber"
+        viewModelScope.launch {
+            libraryRepo.deleteDownload(downloadId)
+        }
+    }
+
+    fun selectChunk(index: Int) {
+        _uiState.update { it.copy(selectedChunk = index) }
+    }
+}

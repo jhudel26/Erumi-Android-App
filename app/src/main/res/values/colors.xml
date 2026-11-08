@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Teal Cinema Palette -->
+    <color name="bg_main">#050A0E</color>
+    <color name="bg_surface">#0A1218</color>
+    <color name="bg_surface_elevated">#101D27</color>
+    <color name="bg_card">#162430</color>
+    
+    <color name="teal_primary">#14B8A6</color>
+    <color name="teal_hover">#2DD4BF</color>
+    <color name="teal_light">#5EEAD4</color>
+    <color name="teal_dark">#0F766E</color>
+    
+    <color name="text_primary">#F3F9FC</color>
+    <color name="text_secondary">#94A9B8</color>
+    <color name="text_dim">#5A7082</color>
+    
+    <color name="border_subtle">#1F2D3A</color>
+    <color name="success">#22C55E</color>
+    <color name="warning">#F59E0B</color>
+    <color name="danger">#EF4444</color>
+</resources>

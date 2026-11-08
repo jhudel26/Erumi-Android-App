@@ -1,0 +1,284 @@
+package com.erumi.nativeapp.features.downloads
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForwardIos
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.FileDownloadOff
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.erumi.nativeapp.domain.model.DownloadStatus
+import com.erumi.nativeapp.ui.theme.*
+
+@Composable
+fun DownloadsScreen(
+    onAnimeClick: (String) -> Unit,
+    viewModel: DownloadsViewModel = viewModel()
+) {
+    val state by viewModel.uiState.collectAsState()
+    var groupToDelete by remember { mutableStateOf<AnimeDownloadGroup?>(null) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BgMain)
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp)
+    ) {
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = "Offline Downloads",
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            color = TextPrimary
+        )
+        Text(
+            text = "Tap any downloaded anime to view and play its episodes",
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextSecondary
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (state.animeGroups.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 90.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Rounded.FileDownloadOff,
+                        contentDescription = "No Downloads",
+                        tint = TextDim,
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "No offline downloads yet",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Download episodes from the anime details page to watch anytime",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextDim
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 90.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(
+                    items = state.animeGroups,
+                    key = { it.animeTitle }
+                ) { group ->
+                    AnimeDownloadGroupCard(
+                        group = group,
+                        // Tapping the card navigates to the Detail page which shows
+                        // downloaded episodes inline with play/status indicators
+                        onClick = { onAnimeClick(group.animeTitle) },
+                        onDeleteClick = { groupToDelete = group }
+                    )
+                }
+            }
+        }
+    }
+
+    // Confirmation dialog before deleting grouped episodes
+    groupToDelete?.let { group ->
+        AlertDialog(
+            onDismissRequest = { groupToDelete = null },
+            title = {
+                Text(
+                    text = "Delete Downloads?",
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to remove all ${group.episodes.size} downloaded episode(s) of \"${group.animeTitle}\" from your device?",
+                    color = TextSecondary
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteAnimeGroup(group)
+                        groupToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ErumiError)
+                ) {
+                    Text("Delete", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { groupToDelete = null }) {
+                    Text("Cancel", color = TextSecondary)
+                }
+            },
+            containerColor = BgCard
+        )
+    }
+}
+
+@Composable
+fun AnimeDownloadGroupCard(
+    group: AnimeDownloadGroup,
+    onClick: () -> Unit,
+    onDeleteClick: () -> Unit
+) {
+    val context = LocalContext.current
+    val sizeMb = group.totalDownloadedBytes / (1024 * 1024)
+
+    // Summarise which episodes are downloaded, e.g. "Ep 1, 2, 3" or "Ep 1–12"
+    val epNumbers = group.episodes
+        .filter { it.status == DownloadStatus.COMPLETED }
+        .map { it.episodeNumber }
+        .sorted()
+
+    val episodeSummary = when {
+        epNumbers.isEmpty() -> "${group.episodes.size} episode(s) • In progress"
+        epNumbers.size == 1 -> "Episode ${epNumbers.first()} downloaded"
+        epNumbers.size <= 4 -> "Ep " + epNumbers.joinToString(", ") + " downloaded"
+        else -> "Ep ${epNumbers.first()}–${epNumbers.last()} (${epNumbers.size} episodes)"
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(BgCard)
+            .clickable { onClick() }
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(width = 64.dp, height = 86.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(BgSurfaceElevated)
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(group.poster)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = group.animeTitle,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = group.animeTitle,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = episodeSummary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TealLight,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                if (group.isAnyDownloading) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        LinearProgressIndicator(
+                            progress = { (group.overallProgress / 100f).coerceIn(0f, 1f) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = TealPrimary,
+                            trackColor = BgSurfaceElevated
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "${group.overallProgress}%",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = TealLight
+                        )
+                    }
+                    Text(
+                        text = "${group.downloadingCount} downloading • ${if (sizeMb > 0) "$sizeMb MB" else "In progress"}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextDim
+                    )
+                } else if (group.failedCount > 0 && group.completedCount == 0) {
+                    Text(
+                        text = "⚠️ Download failed • Tap to retry",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                        color = ErumiError
+                    )
+                } else {
+                    val statusText = if (sizeMb > 0) {
+                        "✓ ${group.completedCount} Ready Offline • $sizeMb MB"
+                    } else {
+                        "✓ ${group.completedCount} Ready Offline"
+                    }
+                    Text(
+                        text = statusText,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                        color = SuccessGreen
+                    )
+                }
+            }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onDeleteClick) {
+                Icon(
+                    imageVector = Icons.Rounded.Delete,
+                    contentDescription = "Delete All Episodes",
+                    tint = TextDim
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.ArrowForwardIos,
+                contentDescription = "Open Details",
+                tint = TextDim,
+                modifier = Modifier
+                    .size(14.dp)
+                    .padding(end = 4.dp)
+            )
+        }
+    }
+}
