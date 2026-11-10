@@ -283,7 +283,7 @@ fun AnimeCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            val yearOrFormat = listOfNotNull(anime.releaseYear?.toString(), anime.format ?: "TV").joinToString(" • ")
+            val yearOrFormat = listOfNotNull(anime.releaseYear?.toString(), anime.format ?: "TV").joinToString(" \u2022 ")
             if (yearOrFormat.isNotBlank()) {
                 Text(
                     text = yearOrFormat,
@@ -603,7 +603,7 @@ fun HeroCarousel(
                         }
                         if (anime.score != null) {
                             Text(
-                                text = "★ ${String.format(Locale.US, "%.1f", anime.score)}",
+                                text = "\u2605 ${String.format(Locale.US, "%.1f", anime.score)}",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = WarningAmber,
                                     fontWeight = FontWeight.Bold
@@ -819,7 +819,7 @@ fun SpotlightHeroBanner(
                 }
                 if (anime.score != null) {
                     Text(
-                        text = "★ ${String.format("%.1f", anime.score)}",
+                        text = "\u2605 ${String.format("%.1f", anime.score)}",
                         style = MaterialTheme.typography.labelSmall.copy(color = WarningAmber, fontWeight = FontWeight.Bold)
                     )
                 }

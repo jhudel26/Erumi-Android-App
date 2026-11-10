@@ -236,7 +236,7 @@ fun AnimeDownloadGroupCard(
         .sorted()
 
     val episodeSummary = when {
-        epNumbers.isEmpty() -> "${group.episodes.size} episode(s) • In progress"
+        epNumbers.isEmpty() -> "${group.episodes.size} episode(s) \u2022 In progress"
         epNumbers.size == 1 -> "Episode ${epNumbers.first()} downloaded"
         epNumbers.size <= 4 -> "Ep " + epNumbers.joinToString(", ") + " downloaded"
         else -> "Ep ${epNumbers.first()}-${epNumbers.last()} (${epNumbers.size} episodes)"
@@ -323,21 +323,21 @@ fun AnimeDownloadGroupCard(
                         )
                     }
                     Text(
-                        text = "${group.downloadingCount} downloading • ${if (sizeMb > 0) "$sizeMb MB" else "In progress"}",
+                        text = "${group.downloadingCount} downloading \u2022 ${if (sizeMb > 0) "$sizeMb MB" else "In progress"}",
                         style = MaterialTheme.typography.labelSmall,
                         color = TextDim
                     )
                 } else if (group.failedCount > 0 && group.completedCount == 0) {
                     Text(
-                        text = "⚠️ Download failed • Tap to retry",
+                        text = "\u26a0️ Download failed \u2022 Tap to retry",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
                         color = ErumiError
                     )
                 } else {
                     val statusText = if (sizeMb > 0) {
-                        "✓ ${group.completedCount} Ready Offline • $sizeMb MB"
+                        "\u2713 ${group.completedCount} Ready Offline \u2022 $sizeMb MB"
                     } else {
-                        "✓ ${group.completedCount} Ready Offline"
+                        "\u2713 ${group.completedCount} Ready Offline"
                     }
                     Text(
                         text = statusText,

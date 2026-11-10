@@ -314,7 +314,7 @@ fun DetailScreen(
                                     if (anime.score != null) {
                                         Surface(color = ErumiGold.copy(alpha = 0.2f), shape = RoundedCornerShape(4.dp)) {
                                             Text(
-                                                text = "★ ${String.format(java.util.Locale.US, "%.1f", anime.score)}",
+                                                text = "\u2605 ${String.format(java.util.Locale.US, "%.1f", anime.score)}",
                                                 style = MaterialTheme.typography.labelSmall.copy(color = ErumiGold, fontWeight = FontWeight.Bold),
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             )
@@ -608,7 +608,7 @@ fun DetailScreen(
                                     )
                                     Text(
                                         text = when (downloadItem?.status) {
-                                            DownloadStatus.COMPLETED -> "Downloaded • Ready Offline"
+                                            DownloadStatus.COMPLETED -> "Downloaded \u2022 Ready Offline"
                                             DownloadStatus.DOWNLOADING -> {
                                                 val mb = downloadItem.downloadedBytes / (1024 * 1024)
                                                 if (downloadItem.progress > 0) {

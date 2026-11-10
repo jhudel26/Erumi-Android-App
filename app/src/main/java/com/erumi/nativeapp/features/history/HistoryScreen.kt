@@ -39,7 +39,7 @@ fun HistoryScreen(
     var pendingDelete by remember { mutableStateOf<WatchProgress?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
-    val dateFormatter = remember { SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault()) }
+    val dateFormatter = remember { SimpleDateFormat("MMM d, yyyy \u2022 h:mm a", Locale.getDefault()) }
 
     val filteredItems = remember(state.historyItems, searchQuery) {
         if (searchQuery.isBlank()) {
@@ -159,7 +159,7 @@ fun HistoryScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Episode ${item.episodeNumber} • $dateStr",
+                                text = "Episode ${item.episodeNumber} \u2022 $dateStr",
                                 style = MaterialTheme.typography.labelSmall.copy(color = ErumiSecondaryText)
                             )
                             Spacer(modifier = Modifier.height(6.dp))

@@ -353,7 +353,7 @@ fun DownloadedDetailScreen(
                                 when (ep.status) {
                                     DownloadStatus.COMPLETED -> {
                                         Text(
-                                            text = if (epSizeMb > 0) "✓ Ready Offline • $epSizeMb MB" else "✓ Ready Offline",
+                                            text = if (epSizeMb > 0) "\u2713 Ready Offline \u2022 $epSizeMb MB" else "\u2713 Ready Offline",
                                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
                                             color = SuccessGreen
                                         )
@@ -371,7 +371,7 @@ fun DownloadedDetailScreen(
                                             )
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(
-                                                text = "Downloading ${ep.progress}% • ${if (epSizeMb > 0) "$epSizeMb MB" else "..."}",
+                                                text = "Downloading ${ep.progress}% \u2022 ${if (epSizeMb > 0) "$epSizeMb MB" else "..."}",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = TealLight
                                             )
@@ -379,7 +379,7 @@ fun DownloadedDetailScreen(
                                     }
                                     DownloadStatus.FAILED -> {
                                         Text(
-                                        text = "⚠️ Download failed",
+                                        text = "\u26a0️ Download failed",
                                             style = MaterialTheme.typography.labelSmall,
                                             color = ErumiError
                                         )

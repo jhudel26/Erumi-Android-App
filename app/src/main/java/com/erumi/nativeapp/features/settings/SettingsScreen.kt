@@ -158,7 +158,7 @@ fun SettingsScreen(
                     SettingsItem(
                         icon = Icons.Default.Code,
                         title = "Architecture",
-                        subtitle = "100% Native Kotlin • Jetpack Compose • Media3"
+                        subtitle = "100% Native Kotlin \u2022 Jetpack Compose \u2022 Media3"
                     )
                 }
             }

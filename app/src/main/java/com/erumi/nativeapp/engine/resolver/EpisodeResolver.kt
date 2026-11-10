@@ -92,7 +92,7 @@ class EpisodeResolver(
                     android.util.Log.d("ErumiResolver", "    - Trying: $cand")
                     val romajiEps = hiAnimeSource.getEpisodes(cand)
                     if (romajiEps.isNotEmpty()) {
-                        android.util.Log.d("ErumiResolver", "✓ Magic Repo Man ID-based fallback worked: ${romajiEps.size} episodes with title: $cand")
+                        android.util.Log.d("ErumiResolver", "\u2713 Magic Repo Man ID-based fallback worked: ${romajiEps.size} episodes with title: $cand")
                         episodesMemoryCache[cacheKey] = romajiEps
                         return@withContext romajiEps
                     }
@@ -135,7 +135,7 @@ class EpisodeResolver(
         // 1. Primary: HiAnime with selected title
         val hiStream = hiAnimeSource.resolveStream(cleanTitle, episodeNumber, audio)
         if (hiStream != null) {
-            android.util.Log.d("ErumiResolver", "✓ Primary HiAnime match found for: $cleanTitle")
+            android.util.Log.d("ErumiResolver", "\u2713 Primary HiAnime match found for: $cleanTitle")
             streamMemoryCache[cacheKey] = hiStream
             return@withContext hiStream
         }
@@ -146,7 +146,7 @@ class EpisodeResolver(
             if (prefix.equals(cleanTitle, ignoreCase = true)) continue
             val pStream = hiAnimeSource.resolveStream(prefix, episodeNumber, audio)
             if (pStream != null) {
-                android.util.Log.d("ErumiResolver", "✓ Prefix match found: $prefix")
+                android.util.Log.d("ErumiResolver", "\u2713 Prefix match found: $prefix")
                 streamMemoryCache[cacheKey] = pStream
                 return@withContext pStream
             }
@@ -157,7 +157,7 @@ class EpisodeResolver(
         android.util.Log.d("ErumiResolver", "AniList search returned ${searchItems.size} results for: $cleanTitle")
         val match = pickValidAniListMatch(cleanTitle, searchItems)
         if (match != null) {
-            android.util.Log.d("ErumiResolver", "✓ AniList match found: ${match.title} (en: ${match.englishName}, romaji: ${match.romajiName})")
+            android.util.Log.d("ErumiResolver", "\u2713 AniList match found: ${match.title} (en: ${match.englishName}, romaji: ${match.romajiName})")
             val altKeys = trustedHiAnimeKeys(match)
             android.util.Log.d("ErumiResolver", "Trying ${altKeys.size} alternate HiAnime keys: $altKeys")
             for (cand in altKeys) {
@@ -166,7 +166,7 @@ class EpisodeResolver(
                 android.util.Log.d("ErumiResolver", "  - Trying alt key: $cand")
                 val altStream = hiAnimeSource.resolveStream(cand, episodeNumber, audio)
                 if (altStream != null) {
-                    android.util.Log.d("ErumiResolver", "✓ Alt key success: $cand")
+                    android.util.Log.d("ErumiResolver", "\u2713 Alt key success: $cand")
                     streamMemoryCache[cacheKey] = altStream
                     return@withContext altStream
                 }
@@ -189,7 +189,7 @@ class EpisodeResolver(
                     android.util.Log.d("ErumiResolver", "    - Trying: $cand")
                     val romajiStream = hiAnimeSource.resolveStream(cand, episodeNumber, audio)
                     if (romajiStream != null) {
-                        android.util.Log.d("ErumiResolver", "✓ Magic Repo Man ID-based fallback stream worked with title: $cand")
+                        android.util.Log.d("ErumiResolver", "\u2713 Magic Repo Man ID-based fallback stream worked with title: $cand")
                         streamMemoryCache[cacheKey] = romajiStream
                         return@withContext romajiStream
                     }
@@ -365,7 +365,7 @@ class EpisodeResolver(
                 val isValid = FuzzyMatcher.isValidTitleMatch(query, name)
                 android.util.Log.d("ErumiResolver", "    - '$name' -> isValidTitleMatch=$isValid")
                 if (isValid) {
-                    android.util.Log.d("ErumiResolver", "  ✓ Strict match found: ${item.title}")
+                    android.util.Log.d("ErumiResolver", "  \u2713 Strict match found: ${item.title}")
                     return item
                 }
             }

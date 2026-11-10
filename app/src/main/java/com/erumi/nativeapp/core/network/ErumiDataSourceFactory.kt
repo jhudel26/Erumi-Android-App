@@ -1,4 +1,4 @@
-﻿package com.erumi.nativeapp.core.network
+package com.erumi.nativeapp.core.network
 
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
@@ -13,22 +13,54 @@ class ErumiDataSourceFactory(
     private val customHeaders: Map<String, String> = emptyMap()
 ) : DataSource.Factory {
 
+    /**
+     * Build a per-factory OkHttpClient that injects Referer/Origin/Sec-Fetch headers
+     * on EVERY request (manifest + every HLS segment).
+     *
+     * We cannot rely on setDefaultRequestProperties() alone because Media3's
+     * SegmentDownloader fires individual DataSpec requests per segment and those
+     * DataSpec-level headers are NOT forwarded as OkHttp request headers that
+     * ApiClient's interceptor can see. This per-instance interceptor solves that.
+     */
+    private val client = ApiClient.okHttpClient.newBuilder()
+        .addInterceptor { chain ->
+            val original = chain.request()
+            val url = original.url.toString()
+
+            // Resolve referer: explicit > registry > default-by-host
+            val ref = when {
+                !customReferer.isNullOrBlank() -> customReferer
+                else -> StreamRefererRegistry.getReferer(url)
+                    ?: defaultRefererFor(url)
+            }
+
+            val origin = try {
+                val u = URI(ref)
+                "${u.scheme}://${u.host}"
+            } catch (e: Exception) {
+                "https://megacloud.tv"
+            }
+
+            val reqBuilder = original.newBuilder()
+                .header("User-Agent", Constants.USER_AGENT)
+                .header("Referer", ref)
+                .header("Origin", origin)
+                .header("Sec-Fetch-Dest", "empty")
+                .header("Sec-Fetch-Mode", "cors")
+                .header("Sec-Fetch-Site", "cross-site")
+                .header("Accept", "*/*")
+
+            // Apply any extra custom headers (e.g. API keys, auth tokens)
+            customHeaders.forEach { (k, v) -> reqBuilder.header(k, v) }
+
+            chain.proceed(reqBuilder.build())
+        }
+        .build()
+
     override fun createDataSource(): DataSource {
-        val baseFactory = OkHttpDataSource.Factory(ApiClient.okHttpClient)
+        val okHttpDataSource = OkHttpDataSource.Factory(client)
             .setUserAgent(Constants.USER_AGENT)
-
-        val headers = mutableMapOf<String, String>()
-        if (!customReferer.isNullOrBlank()) {
-            headers["X-Custom-Referer"] = customReferer
-            headers["Referer"] = customReferer
-        }
-        headers.putAll(customHeaders)
-
-        if (headers.isNotEmpty()) {
-            baseFactory.setDefaultRequestProperties(headers)
-        }
-
-        val okHttpDataSource = baseFactory.createDataSource()
+            .createDataSource()
         return DisguiseHeaderDataSource(okHttpDataSource)
     }
 
