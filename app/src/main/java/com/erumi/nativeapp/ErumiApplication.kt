@@ -1,14 +1,9 @@
-package com.erumi.nativeapp
+﻿package com.erumi.nativeapp
 
 import android.app.Application
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.os.Build
 import coil.ImageLoader
 import coil.ImageLoaderFactory
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
-import com.erumi.nativeapp.core.download.ErumiDownloadService
+import com.erumi.nativeapp.core.download.ErumiDownloadUtil
 import com.erumi.nativeapp.core.image.CoilConfig
 import com.erumi.nativeapp.core.network.ApiClient
 
@@ -16,21 +11,16 @@ class ErumiApplication : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
     }
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                ErumiDownloadService.CHANNEL_ID,
-                "Erumi Downloads",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Shows progress of offline anime episode downloads"
-            }
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager?.createNotificationChannel(channel)
-        }
+    override fun onTerminate() {
+        super.onTerminate()
+        // Release SimpleCache and cancel coroutine pools on process shutdown (A5)
+        ErumiDownloadUtil.release()
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
     }
 
     override fun newImageLoader(): ImageLoader {

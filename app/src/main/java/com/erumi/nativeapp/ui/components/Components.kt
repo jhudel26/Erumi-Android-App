@@ -1,4 +1,4 @@
-package com.erumi.nativeapp.ui.components
+﻿package com.erumi.nativeapp.ui.components
 
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -148,7 +148,7 @@ fun AnimeCard(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val imageResolver = remember { ImageResolver(context) }
+    val imageResolver = remember { ImageResolver.getInstance(context) }
     var resolvedPoster by remember { mutableStateOf(anime.poster) }
     var isLoading by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
@@ -304,7 +304,7 @@ fun ContinueWatchingCard(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val imageResolver = remember { ImageResolver(context) }
+    val imageResolver = remember { ImageResolver.getInstance(context) }
     var resolvedPoster by remember { mutableStateOf(progress.poster) }
     var isLoading by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
@@ -445,7 +445,7 @@ fun HeroCarousel(
     if (spotlightAnime.isEmpty()) return
 
     val context = LocalContext.current
-    val imageResolver = remember { ImageResolver(context) }
+    val imageResolver = remember { ImageResolver.getInstance(context) }
     val pagerState = rememberPagerState(
         initialPage = 0,
         pageCount = { spotlightAnime.size }
@@ -723,7 +723,7 @@ fun SpotlightHeroBanner(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val imageResolver = remember { ImageResolver(context) }
+    val imageResolver = remember { ImageResolver.getInstance(context) }
     var resolvedImage by remember { mutableStateOf(anime.banner ?: anime.poster) }
     var isLoading by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()

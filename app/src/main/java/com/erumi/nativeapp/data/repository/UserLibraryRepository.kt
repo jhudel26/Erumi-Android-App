@@ -17,6 +17,9 @@ import com.erumi.nativeapp.domain.model.DownloadItem
 import com.erumi.nativeapp.domain.model.DownloadStatus
 import com.erumi.nativeapp.domain.model.WatchProgress
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -103,9 +106,8 @@ class UserLibraryRepository(
         val histPoster = db.watchHistoryDao().getHistoryForAnime(animeId).firstOrNull { !it.poster.isNullOrBlank() }?.poster
         if (!histPoster.isNullOrBlank()) return@withContext histPoster
 
-        val dlPoster = db.downloadDao().getAllDownloadsFlow().firstOrNull()?.firstOrNull {
-            (it.animeId == animeId || it.animeTitle.equals(animeTitle, ignoreCase = true)) && !it.poster.isNullOrBlank()
-        }?.poster
+        val dlPoster = db.downloadDao().getDownloadByAnimeId(animeId)
+            ?.takeIf { !it.poster.isNullOrBlank() }?.poster
         if (!dlPoster.isNullOrBlank()) return@withContext dlPoster
 
         val animePoster = db.animeDao().getAnimeById(animeId)?.poster
@@ -288,38 +290,41 @@ class UserLibraryRepository(
 
         // 4b. Download external subtitles locally for 100% offline viewing
         if (subtitles.isNotEmpty()) {
-            val localSubs = mutableListOf<SubtitleTrack>()
             val subsDir = File(context.applicationContext.getExternalFilesDir(null), "erumi_subtitles")
             if (!subsDir.exists()) subsDir.mkdirs()
 
-            for ((idx, sub) in subtitles.withIndex()) {
-                try {
-                    val req = Request.Builder()
-                        .url(sub.url)
-                        .header("User-Agent", com.erumi.nativeapp.core.common.Constants.USER_AGENT)
-                        .apply {
-                            if (!referer.isNullOrBlank()) header("Referer", referer)
+            val localSubs = coroutineScope {
+                subtitles.mapIndexed { idx, sub ->
+                    async {
+                        try {
+                            val req = Request.Builder()
+                                .url(sub.url)
+                                .header("User-Agent", com.erumi.nativeapp.core.common.Constants.USER_AGENT)
+                                .apply {
+                                    if (!referer.isNullOrBlank()) header("Referer", referer)
+                                }
+                                .build()
+                            val body = ApiClient.okHttpClient.newCall(req).execute().use { resp ->
+                                resp.body?.string()
+                            }
+                            if (!body.isNullOrBlank()) {
+                                val safeSubName = "${downloadId}_${sub.language.ifBlank { "und" }}_${idx}.vtt"
+                                val subFile = File(subsDir, safeSubName)
+                                subFile.writeText(body, Charsets.UTF_8)
+                                SubtitleTrack(
+                                    label = sub.label,
+                                    url = Uri.fromFile(subFile).toString(),
+                                    language = sub.language
+                                )
+                            } else null
+                        } catch (e: Exception) {
+                            android.util.Log.e("ErumiDownload", "Failed to download offline subtitle: ${sub.url}", e)
+                            null
                         }
-                        .build()
-                    val body = ApiClient.okHttpClient.newCall(req).execute().use { resp ->
-                        resp.body?.string()
                     }
-                    if (!body.isNullOrBlank()) {
-                        val safeSubName = "${downloadId}_${sub.language.ifBlank { "und" }}_${idx}.vtt"
-                        val subFile = File(subsDir, safeSubName)
-                        subFile.writeText(body, Charsets.UTF_8)
-                        localSubs.add(
-                            SubtitleTrack(
-                                label = sub.label,
-                                url = Uri.fromFile(subFile).toString(),
-                                language = sub.language
-                            )
-                        )
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e("ErumiDownload", "Failed to download offline subtitle: ${sub.url}", e)
-                }
+                }.awaitAll().filterNotNull()
             }
+
             if (localSubs.isNotEmpty()) {
                 val jsonFile = File(subsDir, "${downloadId}_subs.json")
                 jsonFile.writeText(com.google.gson.Gson().toJson(localSubs), Charsets.UTF_8)

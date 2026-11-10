@@ -104,6 +104,7 @@ data class UserSettings(
     val defaultSubtitleLang: String = "en",
     val subtitleSize: Float = 1.0f,
     val skipIntro: Boolean = true,
+    val skipIntroSeconds: Int = 85,
     val wifiOnlyDownloads: Boolean = false,
     val appTheme: String = "Dark"
 )

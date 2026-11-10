@@ -5,12 +5,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 object StreamRefererRegistry {
     private val referers = ConcurrentHashMap<String, String>()
-    @Volatile
-    private var latestReferer: String? = null
-
     fun register(keyOrUrl: String, referer: String) {
         if (referer.isBlank()) return
-        latestReferer = referer
         referers[keyOrUrl] = referer
         try {
             val u = URI(keyOrUrl)
@@ -59,6 +55,6 @@ object StreamRefererRegistry {
         } catch (e: Exception) {
             // Ignored
         }
-        return latestReferer
+        return null
     }
 }

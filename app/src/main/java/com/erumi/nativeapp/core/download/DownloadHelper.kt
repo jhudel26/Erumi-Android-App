@@ -1,12 +1,16 @@
-package com.erumi.nativeapp.core.download
+﻿package com.erumi.nativeapp.core.download
 
+import android.Manifest
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 
 object DownloadHelper {
 
@@ -35,10 +39,25 @@ object DownloadHelper {
     }
 
     /**
-     * Check if downloads can run in background
-     * Battery optimization + foreground service status
+     * Check if notifications are enabled (essential for foreground service download progress)
+     */
+    fun areNotificationsEnabled(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.areNotificationsEnabled()
+        }
+    }
+
+    /**
+     * Check if downloads can reliably run in background (E4):
+     * Requires battery optimization exemption AND notification permissions.
      */
     fun canDownloadInBackground(context: Context): Boolean {
-        return isIgnoringBatteryOptimizations(context)
+        return isIgnoringBatteryOptimizations(context) && areNotificationsEnabled(context)
     }
 }

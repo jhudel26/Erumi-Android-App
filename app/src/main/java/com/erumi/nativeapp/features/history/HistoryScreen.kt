@@ -8,10 +8,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,13 +37,43 @@ fun HistoryScreen(
     val state by viewModel.uiState.collectAsState()
     var showConfirmClear by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<WatchProgress?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearchActive by remember { mutableStateOf(false) }
+    val dateFormatter = remember { SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault()) }
+
+    val filteredItems = remember(state.historyItems, searchQuery) {
+        if (searchQuery.isBlank()) {
+            state.historyItems
+        } else {
+            state.historyItems.filter {
+                it.animeTitle.contains(searchQuery.trim(), ignoreCase = true)
+            }
+        }
+    }
 
     Scaffold(
         containerColor = ErumiBackground,
         topBar = {
             TopAppBar(
                 title = {
-                    Text(text = "Watch History", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                    if (isSearchActive) {
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = { Text("Filter history...", color = ErumiMuted) },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                                unfocusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                                focusedTextColor = ErumiPrimaryText,
+                                unfocusedTextColor = ErumiPrimaryText,
+                                cursorColor = ErumiPrimary
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        Text(text = "Watch History", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
@@ -50,6 +82,16 @@ fun HistoryScreen(
                 },
                 actions = {
                     if (state.historyItems.isNotEmpty()) {
+                        IconButton(onClick = {
+                            isSearchActive = !isSearchActive
+                            if (!isSearchActive) searchQuery = ""
+                        }) {
+                            Icon(
+                                imageVector = if (isSearchActive) Icons.Default.Close else Icons.Default.Search,
+                                contentDescription = "Search History",
+                                tint = ErumiPrimaryText
+                            )
+                        }
                         IconButton(onClick = { showConfirmClear = true }) {
                             Icon(imageVector = Icons.Default.DeleteSweep, contentDescription = "Clear History", tint = ErumiError)
                         }
@@ -74,6 +116,18 @@ fun HistoryScreen(
                     Text(text = "Anime you watch will show up here", style = MaterialTheme.typography.bodySmall.copy(color = ErumiMuted))
                 }
             }
+        } else if (filteredItems.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No watch history matches '$searchQuery'",
+                    style = MaterialTheme.typography.bodyMedium.copy(color = ErumiSecondaryText)
+                )
+            }
         } else {
             LazyColumn(
                 modifier = Modifier
@@ -84,10 +138,10 @@ fun HistoryScreen(
                 contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp)
             ) {
                 items(
-                    items = state.historyItems,
+                    items = filteredItems,
                     key = { "${it.animeId}_${it.episodeNumber}" }
                 ) { item ->
-                    val dateStr = SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault()).format(Date(item.updatedAt))
+                    val dateStr = dateFormatter.format(Date(item.updatedAt))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -120,25 +174,30 @@ fun HistoryScreen(
                             )
                         }
 
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Resume",
-                            tint = ErumiPrimary,
-                            modifier = Modifier.size(28.dp)
-                        )
-
-                        Spacer(modifier = Modifier.width(4.dp))
-
-                        IconButton(
-                            onClick = { pendingDelete = item },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete history entry",
-                                tint = ErumiError,
-                                modifier = Modifier.size(22.dp)
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = { pendingDelete = item },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete entry",
+                                    tint = ErumiSecondaryText,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            IconButton(
+                                onClick = { onResumeWatch(item) },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = "Resume",
+                                    tint = ErumiPrimary,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -148,49 +207,46 @@ fun HistoryScreen(
         if (showConfirmClear) {
             AlertDialog(
                 onDismissRequest = { showConfirmClear = false },
-                title = { Text(text = "Clear Watch History?", color = ErumiPrimaryText) },
-                text = { Text(text = "Are you sure you want to remove all your watch history? This also clears Continue Watching on Home. This action cannot be undone.", color = ErumiSecondaryText) },
+                title = { Text(text = "Clear History?", color = ErumiPrimaryText) },
+                text = { Text(text = "This will remove all watch progress and clear Continue Watching from Home.", color = ErumiSecondaryText) },
                 confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.clearAllHistory()
-                        showConfirmClear = false
-                    }) {
-                        Text(text = "Clear All", color = ErumiError, fontWeight = FontWeight.Bold)
+                    TextButton(
+                        onClick = {
+                            viewModel.clearAllHistory()
+                            showConfirmClear = false
+                        }
+                    ) {
+                        Text("Clear All", color = ErumiError)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showConfirmClear = false }) {
-                        Text(text = "Cancel", color = ErumiSecondaryText)
+                        Text("Cancel", color = ErumiSecondaryText)
                     }
-                },
-                containerColor = ErumiElevatedSurface
+                }
             )
         }
 
         pendingDelete?.let { item ->
             AlertDialog(
                 onDismissRequest = { pendingDelete = null },
-                title = { Text(text = "Delete this entry?", color = ErumiPrimaryText) },
-                text = {
-                    Text(
-                        text = "Remove ${item.animeTitle} — Episode ${item.episodeNumber} from history?",
-                        color = ErumiSecondaryText
-                    )
-                },
+                title = { Text(text = "Remove Entry?", color = ErumiPrimaryText) },
+                text = { Text(text = "Remove ${item.animeTitle} Ep ${item.episodeNumber} from history?", color = ErumiSecondaryText) },
                 confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.deleteHistoryEntry(item)
-                        pendingDelete = null
-                    }) {
-                        Text(text = "Delete", color = ErumiError, fontWeight = FontWeight.Bold)
+                    TextButton(
+                        onClick = {
+                            viewModel.deleteHistoryEntry(item)
+                            pendingDelete = null
+                        }
+                    ) {
+                        Text("Remove", color = ErumiError)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { pendingDelete = null }) {
-                        Text(text = "Cancel", color = ErumiSecondaryText)
+                        Text("Cancel", color = ErumiSecondaryText)
                     }
-                },
-                containerColor = ErumiElevatedSurface
+                }
             )
         }
     }

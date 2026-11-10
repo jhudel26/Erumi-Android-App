@@ -25,6 +25,15 @@ class DatabaseConverters {
             DownloadStatus.PENDING
         }
     }
+
+    // A4: Room TypeConverter for List<String> to support clean collections
+    @TypeConverter
+    fun fromStringList(list: List<String>?): String = list?.joinToString(",") ?: ""
+
+    @TypeConverter
+    fun toStringList(value: String?): List<String> {
+        return if (value.isNullOrBlank()) emptyList() else value.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    }
 }
 
 // Migration from version 1 to 2: Add ImageCacheEntity
@@ -80,7 +89,6 @@ abstract class AppDatabase : RoomDatabase() {
                     Constants.DATABASE_NAME
                 )
                     .addMigrations(MIGRATION_1_2)
-                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance

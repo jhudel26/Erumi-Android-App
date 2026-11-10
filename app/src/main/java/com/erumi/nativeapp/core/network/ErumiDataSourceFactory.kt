@@ -1,13 +1,11 @@
-package com.erumi.nativeapp.core.network
+﻿package com.erumi.nativeapp.core.network
 
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import com.erumi.nativeapp.core.common.Constants
-import okhttp3.OkHttpClient
 import java.net.URI
-import java.util.concurrent.TimeUnit
 
 @OptIn(UnstableApi::class)
 class ErumiDataSourceFactory(
@@ -15,54 +13,23 @@ class ErumiDataSourceFactory(
     private val customHeaders: Map<String, String> = emptyMap()
 ) : DataSource.Factory {
 
-    private val client: OkHttpClient = ApiClient.okHttpClient.newBuilder()
-        .connectTimeout(20, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .followRedirects(true)
-        .followSslRedirects(true)
-        .retryOnConnectionFailure(true)
-        .addInterceptor { chain ->
-            val origRequest = chain.request()
-            val url = origRequest.url.toString()
-
-            val resolvedRef = when {
-                !customReferer.isNullOrBlank() -> customReferer
-                else -> StreamRefererRegistry.getReferer(url) ?: defaultRefererFor(url)
-            }
-
-            val origin = try {
-                val u = URI(resolvedRef)
-                "${u.scheme}://${u.host}"
-            } catch (e: Exception) {
-                "https://megacloud.tv"
-            }
-
-            val reqBuilder = origRequest.newBuilder()
-                .header("User-Agent", Constants.USER_AGENT)
-                .header("Referer", resolvedRef)
-                .header("Origin", origin)
-                .header("Sec-Fetch-Dest", "empty")
-                .header("Sec-Fetch-Mode", "cors")
-                .header("Sec-Fetch-Site", "cross-site")
-                .header("Accept", "*/*")
-
-            customHeaders.forEach { (k, v) ->
-                reqBuilder.header(k, v)
-            }
-
-            val response = chain.proceed(reqBuilder.build())
-            android.util.Log.d(
-                "ErumiDS",
-                "[${response.code}] ${origRequest.url.host}${origRequest.url.encodedPath.take(60)} ref=$resolvedRef"
-            )
-            response
-        }
-        .build()
-
-    private val okHttpDataSourceFactory = OkHttpDataSource.Factory(client)
-
     override fun createDataSource(): DataSource {
-        return DisguiseHeaderDataSource(okHttpDataSourceFactory.createDataSource())
+        val baseFactory = OkHttpDataSource.Factory(ApiClient.okHttpClient)
+            .setUserAgent(Constants.USER_AGENT)
+
+        val headers = mutableMapOf<String, String>()
+        if (!customReferer.isNullOrBlank()) {
+            headers["X-Custom-Referer"] = customReferer
+            headers["Referer"] = customReferer
+        }
+        headers.putAll(customHeaders)
+
+        if (headers.isNotEmpty()) {
+            baseFactory.setDefaultRequestProperties(headers)
+        }
+
+        val okHttpDataSource = baseFactory.createDataSource()
+        return DisguiseHeaderDataSource(okHttpDataSource)
     }
 
     companion object {

@@ -1,4 +1,4 @@
-package com.erumi.nativeapp.features.search
+﻿package com.erumi.nativeapp.features.search
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -23,7 +23,7 @@ data class SearchUiState(
 
 class SearchViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val animeRepo = AnimeRepository()
+    private val animeRepo = AnimeRepository(application)
     private val libraryRepo = UserLibraryRepository(application)
 
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -65,14 +65,15 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.update { it.copy(query = q, isSearching = true, hasSearched = true, error = null) }
 
         viewModelScope.launch {
-            libraryRepo.addSearchQuery(q)
-
             animeRepo.searchFlow(q).collect { resource ->
                 when (resource) {
                     is Resource.Success -> {
+                        val results = resource.data.orEmpty()
+                        // E7: only persist query when results are non-empty
+                        if (results.isNotEmpty()) libraryRepo.addSearchQuery(q)
                         _uiState.update {
                             it.copy(
-                                searchResults = resource.data.orEmpty(),
+                                searchResults = results,
                                 isSearching = false
                             )
                         }

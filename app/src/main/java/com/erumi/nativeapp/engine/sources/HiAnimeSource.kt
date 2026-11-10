@@ -1,5 +1,6 @@
 package com.erumi.nativeapp.engine.sources
 
+import android.text.Html
 import android.util.Base64
 import com.erumi.nativeapp.core.common.Constants
 import com.erumi.nativeapp.core.network.ApiClient
@@ -71,7 +72,7 @@ class HiAnimeSource(private val client: OkHttpClient = ApiClient.okHttpClient) :
                 val result = HiAnimeSearchResult(
                     id = id,
                     slug = slug,
-                    name = name.replace("&#039;", "'").replace("&amp;", "&").replace("&quot;", "\"").trim()
+                    name = Html.fromHtml(name, Html.FROM_HTML_MODE_LEGACY).toString().trim()
                 )
                 results.add(result)
                 android.util.Log.d("ErumiHiAnime", "Found: ${result.name} (slug: ${result.slug}, id: ${result.id})")

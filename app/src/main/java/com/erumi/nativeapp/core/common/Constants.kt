@@ -9,6 +9,7 @@ object Constants {
     const val ANIDB_BASE_URL = "https://anidb.app"
     const val ANINEKO_BASE_URL = "https://anineko.to"
     const val TMDB_API_URL = "https://api.themoviedb.org/3"
+    // TODO: Move to local.properties + BuildConfig — do NOT commit to VCS
     const val TMDB_API_KEY = "2dca580c2a14b55200e784d157207b4d"
 
     const val DATABASE_NAME = "erumi_native_db"
@@ -20,4 +21,6 @@ object Constants {
     const val DEFAULT_SUB_LANG = "en"
     const val DEFAULT_AUDIO_LANG = "sub"
     const val DEFAULT_SKIP_INTRO = true
+    const val DEFAULT_SKIP_INTRO_SECONDS = 85
+    const val DEFAULT_APP_THEME = "Dark Cinema"
 }

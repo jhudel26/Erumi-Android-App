@@ -21,6 +21,8 @@ import com.erumi.nativeapp.domain.model.DownloadStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -32,6 +34,9 @@ object ErumiDownloadUtil {
 
     private const val TAG = "ErumiDownload"
     private const val DOWNLOAD_CONTENT_DIRECTORY = "erumi_downloads"
+
+    // Bound coroutine scope — cancelled in release() to avoid leaks (B3/A5)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @Volatile
     private var databaseProvider: DatabaseProvider? = null
@@ -46,7 +51,7 @@ object ErumiDownloadUtil {
 
     private fun startProgressPoller(context: Context, manager: DownloadManager) {
         if (progressPollerJob?.isActive == true) return
-        progressPollerJob = CoroutineScope(Dispatchers.IO).launch {
+        progressPollerJob = scope.launch {
             while (isActive) {
                 val currentDownloads = manager.currentDownloads
                 val activeDownloads = currentDownloads.filter {
@@ -104,7 +109,7 @@ object ErumiDownloadUtil {
                 getDatabaseProvider(context),
                 getDownloadCache(context),
                 upstreamFactory,
-                Executors.newFixedThreadPool(4)
+                Executors.newFixedThreadPool(3) // matches maxParallelDownloads (P7)
             ).apply {
                 maxParallelDownloads = 3
                 addListener(object : DownloadManager.Listener {
@@ -140,7 +145,7 @@ object ErumiDownloadUtil {
                         val downloadedBytes = download.bytesDownloaded
                         val totalBytes = download.contentLength.coerceAtLeast(0L)
 
-                        CoroutineScope(Dispatchers.IO).launch {
+                        scope.launch {
                             val db = AppDatabase.getInstance(context)
                             db.downloadDao().updateProgress(
                                 id = download.request.id,
@@ -161,7 +166,7 @@ object ErumiDownloadUtil {
                         download: Download
                     ) {
                         Log.d(TAG, "onDownloadRemoved: id=${download.request.id}")
-                        CoroutineScope(Dispatchers.IO).launch {
+                        scope.launch {
                             val db = AppDatabase.getInstance(context)
                             db.downloadDao().deleteDownload(download.request.id)
                         }
@@ -235,5 +240,16 @@ object ErumiDownloadUtil {
         // Wrap with DefaultDataSource so local file:// (offline subtitles), content:// and asset://
         // are loaded directly via FileDataSource without hitting OkHttp or network!
         return DefaultDataSource.Factory(app, cacheFactory)
+    }
+
+    /**
+     * Releases the SimpleCache and cancels all coroutines. Call from Application.onTerminate()
+     * or a ProcessLifecycleObserver to prevent SimpleCache database corruption (A5).
+     */
+    fun release() {
+        progressPollerJob?.cancel()
+        scope.cancel()
+        downloadCache?.release()
+        downloadCache = null
     }
 }

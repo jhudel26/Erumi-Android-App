@@ -217,7 +217,7 @@ fun ErumiNavGraph(
                 arguments = listOf(navArgument("animeTitle") { type = NavType.StringType })
             ) { backStackEntry ->
                 val encodedTitle = backStackEntry.arguments?.getString("animeTitle").orEmpty()
-                val decodedTitle = java.net.URLDecoder.decode(encodedTitle, "UTF-8")
+                val decodedTitle = runCatching { java.net.URLDecoder.decode(encodedTitle, "UTF-8") }.getOrDefault(encodedTitle)
                 val context = LocalContext.current
                 val app = context.applicationContext as android.app.Application
                 val detailViewModel: DetailViewModel = viewModel(
@@ -265,7 +265,7 @@ fun ErumiNavGraph(
                 )
             ) { backStackEntry ->
                 val encodedTitle = backStackEntry.arguments?.getString("animeTitle").orEmpty()
-                val decodedTitle = java.net.URLDecoder.decode(encodedTitle, "UTF-8")
+                val decodedTitle = runCatching { java.net.URLDecoder.decode(encodedTitle, "UTF-8") }.getOrDefault(encodedTitle)
                 val episodeNumber = backStackEntry.arguments?.getInt("episodeNumber") ?: 1
                 val resumeTime = backStackEntry.arguments?.getLong("resumeTime") ?: 0L
                 val encodedId = backStackEntry.arguments?.getString("animeId").orEmpty()

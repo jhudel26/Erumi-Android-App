@@ -1,4 +1,4 @@
-package com.erumi.nativeapp.features.player
+﻿package com.erumi.nativeapp.features.player
 
 import android.app.Application
 import android.net.Uri
@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 data class PlayerUiState(
     val animeTitle: String,
     val currentEpisodeNumber: Int,
-    val totalEpisodes: Int = 12,
+    val totalEpisodes: Int = 0, // B10: default 0, updated when episode list loads
     val currentStream: StreamSource? = null,
     val availableSubtitles: List<SubtitleTrack> = emptyList(),
     val selectedSubtitleLang: String = "en",
@@ -67,7 +67,7 @@ class PlayerViewModel(
 
     val resolvedAnimeId: String = if (!animeId.isNullOrBlank()) animeId else "anime_${animeTitle.hashCode()}"
 
-    private val animeRepo = AnimeRepository()
+    private val animeRepo = AnimeRepository(application)
     private val libraryRepo = UserLibraryRepository(application)
     private val preferencesDataStore = UserPreferencesDataStore(application)
 
@@ -90,6 +90,8 @@ class PlayerViewModel(
 
     private var progressTrackerJob: Job? = null
     private var allEpisodes: List<Episode> = emptyList()
+    private var lastSavedPositionMs: Long = 0L // P4: throttle progress saves to every 5 s
+    private var hasSkippedIntroForEpisode: Boolean = false // E10: suppress skip intro prompt once skipped
 
     init {
         initPlayer()
@@ -367,7 +369,7 @@ class PlayerViewModel(
                 val currentSelectedLang = current.selectedSubtitleLang
                 current.copy(
                     currentStream = stream,
-                    // Reset subtitle list to what the new stream provides — onTracksChanged will append embedded ones
+                    // Reset subtitle list to what the new stream provides - onTracksChanged will append embedded ones
                     // Mark the subtitle matching the selected ID as selected, or select the first one if no match
                     availableSubtitles = stream.subtitles.map { sub ->
                         sub.copy(isSelected = sub.id == currentSelectedId)
@@ -392,7 +394,7 @@ class PlayerViewModel(
 
     private fun playStream(stream: StreamSource, startPosMs: Long) {
         val player = ensurePlayerInitialized()
-        val referer = stream.referer.ifBlank { ErumiDataSourceFactory.defaultRefererFor(stream.url) }
+        val referer: String = if (!stream.referer.isNullOrBlank()) stream.referer else ErumiDataSourceFactory.defaultRefererFor(stream.url)
         val dataSourceFactory = ErumiDownloadUtil.buildReadOnlyCacheDataSource(getApplication(), referer)
 
         // Build base MediaItem with URI
@@ -449,7 +451,7 @@ class PlayerViewModel(
                 if (player != null && player.playbackState == Player.STATE_READY) {
                     val pos = player.currentPosition.coerceAtLeast(0L)
                     val dur = player.duration.coerceAtLeast(0L)
-                    val showIntro = userSettings.skipIntro && (pos in 5_000..90_000)
+                    val showIntro = userSettings.skipIntro && !hasSkippedIntroForEpisode && (pos in 5_000..90_000)
 
                     _uiState.update {
                         it.copy(
@@ -459,8 +461,9 @@ class PlayerViewModel(
                         )
                     }
 
-                    // Save watch progress to Room with consistent animeId
-                    if (pos > 5_000 && dur > 0) {
+                    // Save watch progress: throttle to every 5 s to reduce Room I/O (P4)
+                    if (pos > 5_000 && dur > 0 && kotlin.math.abs(pos - lastSavedPositionMs) >= 5_000L) {
+                        lastSavedPositionMs = pos
                         libraryRepo.saveWatchProgress(
                             animeId = resolvedAnimeId,
                             animeTitle = animeTitle,
@@ -567,7 +570,7 @@ class PlayerViewModel(
 
     private fun playStreamWithSelectedSubtitle(stream: StreamSource, selectedSub: SubtitleTrack, startPosMs: Long) {
         val player = ensurePlayerInitialized()
-        val referer = stream.referer.ifBlank { ErumiDataSourceFactory.defaultRefererFor(stream.url) }
+        val referer: String = if (!stream.referer.isNullOrBlank()) stream.referer else ErumiDataSourceFactory.defaultRefererFor(stream.url)
         val dataSourceFactory = ErumiDownloadUtil.buildReadOnlyCacheDataSource(getApplication(), referer)
 
         // Build base MediaItem with URI
@@ -631,7 +634,8 @@ class PlayerViewModel(
 
     fun skipIntro() {
         val player = exoPlayer ?: return
-        player.seekTo(player.currentPosition + 85_000)
+        val skipDurationMs = (userSettings.skipIntroSeconds * 1000L).coerceIn(10_000L, 180_000L)
+        player.seekTo(player.currentPosition + skipDurationMs)
     }
 
     fun playNextEpisode() {

@@ -1,4 +1,4 @@
-package com.erumi.nativeapp.features.downloads
+﻿package com.erumi.nativeapp.features.downloads
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -148,7 +148,7 @@ fun DownloadsScreen(
             ) {
                 items(
                     items = state.animeGroups,
-                    key = { it.animeTitle }
+                    key = { it.animeId ?: it.animeTitle }
                 ) { group ->
                     AnimeDownloadGroupCard(
                         group = group,
@@ -211,7 +211,7 @@ fun AnimeDownloadGroupCard(
     onResumeClick: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val imageResolver = remember { ImageResolver(context) }
+    val imageResolver = remember { ImageResolver.getInstance(context) }
     var resolvedPoster by remember { mutableStateOf(group.poster) }
 
     LaunchedEffect(group.animeTitle, group.poster) {
@@ -229,7 +229,7 @@ fun AnimeDownloadGroupCard(
 
     val sizeMb = group.totalDownloadedBytes / (1024 * 1024)
 
-    // Summarise which episodes are downloaded, e.g. "Ep 1, 2, 3" or "Ep 1–12"
+    // Summarise which episodes are downloaded, e.g. "Ep 1, 2, 3" or "Ep 1-12"
     val epNumbers = group.episodes
         .filter { it.status == DownloadStatus.COMPLETED }
         .map { it.episodeNumber }
@@ -239,7 +239,7 @@ fun AnimeDownloadGroupCard(
         epNumbers.isEmpty() -> "${group.episodes.size} episode(s) • In progress"
         epNumbers.size == 1 -> "Episode ${epNumbers.first()} downloaded"
         epNumbers.size <= 4 -> "Ep " + epNumbers.joinToString(", ") + " downloaded"
-        else -> "Ep ${epNumbers.first()}–${epNumbers.last()} (${epNumbers.size} episodes)"
+        else -> "Ep ${epNumbers.first()}-${epNumbers.last()} (${epNumbers.size} episodes)"
     }
 
     Row(

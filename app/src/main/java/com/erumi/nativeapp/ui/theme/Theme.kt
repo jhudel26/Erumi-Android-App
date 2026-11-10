@@ -1,4 +1,4 @@
-package com.erumi.nativeapp.ui.theme
+﻿package com.erumi.nativeapp.ui.theme
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -25,6 +25,7 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun ErumiTheme(
+    appTheme: String = "Dark Cinema",
     content: @Composable () -> Unit
 ) {
     val colorScheme = DarkColorScheme

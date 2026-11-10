@@ -35,7 +35,7 @@ fun SearchScreen(
     viewModel: SearchViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    val popularTags = listOf("Solo Leveling", "Jujutsu Kaisen", "Frieren", "Demon Slayer", "One Piece", "Bleach", "Attack on Titan")
+    val popularTags = remember { listOf("Solo Leveling", "Jujutsu Kaisen", "Frieren", "Demon Slayer", "One Piece", "Bleach", "Attack on Titan") }
 
     Scaffold(
         containerColor = ErumiBackground

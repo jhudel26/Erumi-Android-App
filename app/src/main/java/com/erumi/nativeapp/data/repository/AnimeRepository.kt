@@ -1,4 +1,4 @@
-package com.erumi.nativeapp.data.repository
+﻿package com.erumi.nativeapp.data.repository
 
 import android.content.Context
 import com.erumi.nativeapp.core.common.Resource
@@ -16,24 +16,22 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
 class AnimeRepository(
-    private val context: Context? = null,
+    private val context: Context,
     private val allAnimeSource: AllAnimeSource = AllAnimeSource(),
     private val aniListSource: AniListSource = AniListSource(),
     private val episodeResolver: EpisodeResolver = EpisodeResolver()
 ) {
 
-    private val imageResolver: ImageResolver? = context?.let {
-        try {
-            ImageResolver(it)
-        } catch (e: Exception) {
-            android.util.Log.e("AnimeRepository", "Failed to initialize ImageResolver: ${e.message}", e)
-            null
-        }
+    private val imageResolver: ImageResolver? = try {
+        ImageResolver(context)
+    } catch (e: Exception) {
+        android.util.Log.e("AnimeRepository", "Failed to initialize ImageResolver: ${e.message}", e)
+        null
     }
 
-    private var cachedTrending: List<Anime>? = null
-    private var cachedLatest: List<Anime>? = null
-    private var cachedPopular: List<Anime>? = null
+    @Volatile private var cachedTrending: List<Anime>? = null
+    @Volatile private var cachedLatest: List<Anime>? = null
+    @Volatile private var cachedPopular: List<Anime>? = null
 
     fun getTrendingFlow(limit: Int = 18): Flow<Resource<List<Anime>>> = flow {
         emit(Resource.Loading(cachedTrending))

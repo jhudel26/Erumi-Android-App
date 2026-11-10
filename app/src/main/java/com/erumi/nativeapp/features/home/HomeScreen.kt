@@ -59,6 +59,8 @@ import com.erumi.nativeapp.ui.components.HeroCarousel
 import com.erumi.nativeapp.ui.components.SectionHeader
 import com.erumi.nativeapp.ui.theme.*
 
+private val GENRE_FILTER_OPTIONS = listOf("All", "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Romance", "Sci-Fi", "Mystery", "Supernatural")
+
 @Composable
 fun HomeScreen(
     onAnimeClick: (Anime) -> Unit,
@@ -68,7 +70,6 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    val genres = listOf("All", "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Romance", "Sci-Fi", "Mystery", "Supernatural")
 
     Scaffold(
         containerColor = ErumiBackground,
@@ -160,7 +161,7 @@ fun HomeScreen(
                     SectionHeader(title = "Explore Categories")
                     Spacer(modifier = Modifier.height(8.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(genres) { genre ->
+                        items(GENRE_FILTER_OPTIONS) { genre ->
                             val isSelected = state.selectedGenre == genre
                             Surface(
                                 color = if (isSelected) TealPrimary else BgCard,

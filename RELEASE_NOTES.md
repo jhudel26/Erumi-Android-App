@@ -1,5 +1,31 @@
 # Release Notes - Erumi Native Android App
 
+## Version 1.2.0 - Stability, Performance, & UX Refinements
+
+### 🐛 Critical & Stability Fixes
+- **Data Safety**: Removed `fallbackToDestructiveMigration()` from Room Database so user library data (history, watchlist, downloads) is protected across app updates.
+- **Split-Buffer Video Streaming**: Re-architected `DisguiseHeaderDataSource` to buffer up to 64 KB across packet chunk boundaries, preventing media stream corruption when CDN disguise headers span multiple reads.
+- **Legacy Android Fix**: Removed `java.util.Base64` fallback in `OtakuCipher` that caused `NoClassDefFoundError` crashes on Android versions below API 26.
+- **Jikan Artwork v4**: Corrected title extraction to handle Jikan v4's JSON array structure with proper language type filters.
+- **Collector & Coroutine Leak Fixes**: Isolated flow collectors in `DetailViewModel` and download listeners in `ErumiDownloadUtil` with lifecycle-bound supervision and cancellation.
+- **Mojibake / Character Encoding**: Restored all corrupted UTF-8 string symbols (`•`, `✓`, `★`, `⚠️`, `→`) across card, carousel, and download screens.
+
+### ⚡ Performance Improvements
+- **Singleton ImageResolver**: Hoisted `ImageResolver` into a shared singleton factory across all composables, eliminating redundant database instances and unifying in-memory LRU caching.
+- **Throttled Room Writes**: Reduced watch progress database writes in `PlayerViewModel` from 1-second ticks to a minimum 5-second delta.
+- **Targeted Database Lookups**: Replaced full-table scans with indexed DAO queries (`getDownloadByAnimeId`).
+- **Parallel Subtitle Downloads**: Accelerated offline download preparation by fetching subtitle tracks concurrently via `coroutineScope` and `async`/`awaitAll`.
+
+### ✨ UX & Feature Enhancements
+- **In-Screen Search & Filters**: Added real-time search bars to both **Watchlist** and **Watch History** screens.
+- **Watchlist Management**: Added long-press gesture with confirmation dialog to remove titles directly from the watchlist.
+- **Manual Progress Tracking**: Added `markEpisodeAsWatched()` in `DetailViewModel` to mark episodes as watched directly from the detail screen.
+- **Dynamic Subtitle Sizing**: Wired the user's subtitle size preference directly to ExoPlayer's `SubtitleView`.
+- **Configurable Intro Skipping**: Added customizable skip intro duration (defaults to 85 seconds) with smart suppression once skipped.
+- **Search Pagination**: Added page-based pagination (`loadNextPage()`) to the search screen.
+- **Android 13+ Notifications**: Added runtime permission requests for `POST_NOTIFICATIONS` to ensure foreground download progress notifications appear.
+
+---
 ## Version 1.1.0 - Critical Bug Fixes & Download Enhancements
 
 ### 🐛 Critical Bug Fixes

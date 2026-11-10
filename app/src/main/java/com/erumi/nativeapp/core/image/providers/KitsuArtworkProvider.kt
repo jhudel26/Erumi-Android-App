@@ -1,4 +1,4 @@
-package com.erumi.nativeapp.core.image.providers
+﻿package com.erumi.nativeapp.core.image.providers
 
 import android.util.Log
 import com.erumi.nativeapp.core.network.ApiClient
@@ -99,7 +99,7 @@ class KitsuArtworkProvider(private val client: OkHttpClient = ApiClient.okHttpCl
             kitsuId = data.get("id")?.asString ?: "",
             canonicalTitle = attributes?.get("canonicalTitle")?.asString ?: "",
             titleEnglish = titles?.get("en")?.asString,
-            titleJapanese = titles?.get("en_jp")?.asString,
+            titleJapanese = titles?.get("ja_jp")?.asString ?: titles?.get("en_jp")?.asString,
             posterUrl = posterImage?.get("original")?.asString,
             coverUrl = coverImage?.get("original")?.asString,
             startDate = attributes?.get("startDate")?.asString,

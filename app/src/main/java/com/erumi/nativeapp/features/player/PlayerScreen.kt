@@ -1,4 +1,4 @@
-package com.erumi.nativeapp.features.player
+﻿package com.erumi.nativeapp.features.player
 
 import android.app.Activity
 import android.content.Context
@@ -300,7 +300,7 @@ fun PlayerScreen(
                     player = viewModel.exoPlayer
                     useController = false // Custom Compose Controls
                     artworkDisplayMode = PlayerView.ARTWORK_DISPLAY_MODE_OFF
-                    // Disable ExoPlayer's built-in buffering spinner — we render our own custom one
+                    // Disable ExoPlayer's built-in buffering spinner - we render our own custom one
                     setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
                     setShowSubtitleButton(true)
                     setControllerAutoShow(false)
@@ -492,7 +492,7 @@ fun PlayerScreen(
             }
         }
 
-        // 5. Volume HUD (right side — volume drag is on right half of screen)
+        // 5. Volume HUD (right side - volume drag is on right half of screen)
         if (showVolumeHud) {
             Box(
                 modifier = Modifier
@@ -541,7 +541,7 @@ fun PlayerScreen(
             }
         }
 
-        // 6. Brightness HUD (left side — brightness drag is on left half of screen)
+        // 6. Brightness HUD (left side - brightness drag is on left half of screen)
         if (showBrightnessHud) {
             Box(
                 modifier = Modifier
@@ -1045,7 +1045,7 @@ fun PlayerScreen(
             )
         }
 
-        // Lock indicator — shown briefly when lock state changes or user taps while locked
+        // Lock indicator - shown briefly when lock state changes or user taps while locked
         if (isLocked && showLockIndicator) {
             Box(
                 modifier = Modifier

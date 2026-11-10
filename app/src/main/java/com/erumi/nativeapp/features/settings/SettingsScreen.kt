@@ -17,7 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.erumi.nativeapp.BuildConfig
 import com.erumi.nativeapp.ui.theme.*
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,9 +31,22 @@ fun SettingsScreen(
     val settings = state.settings
 
     var showQualityDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // Show snackbar when cache cleared message arrives
+    LaunchedEffect(state.cacheClearedMessage) {
+        state.cacheClearedMessage?.let { msg ->
+            scope.launch {
+                snackbarHostState.showSnackbar(message = msg, duration = SnackbarDuration.Short)
+                viewModel.dismissCacheMessage()
+            }
+        }
+    }
 
     Scaffold(
         containerColor = ErumiBackground,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -137,7 +152,7 @@ fun SettingsScreen(
                     SettingsItem(
                         icon = Icons.Default.Info,
                         title = "App Version",
-                        subtitle = "Erumi v1.1.0"
+                        subtitle = "Erumi v${BuildConfig.VERSION_NAME}"
                     )
                     HorizontalDivider(color = ErumiBorder, thickness = 0.5.dp)
                     SettingsItem(
@@ -179,21 +194,6 @@ fun SettingsScreen(
                 confirmButton = {
                     TextButton(onClick = { showQualityDialog = false }) {
                         Text(text = "Done", color = ErumiPrimary)
-                    }
-                },
-                containerColor = ErumiElevatedSurface
-            )
-        }
-
-        // Cache Cleared Snackbar
-        state.cacheClearedMessage?.let { msg ->
-            AlertDialog(
-                onDismissRequest = { viewModel.dismissCacheMessage() },
-                title = { Text(text = "Cache Cleared", color = ErumiPrimaryText) },
-                text = { Text(text = msg, color = ErumiSecondaryText) },
-                confirmButton = {
-                    TextButton(onClick = { viewModel.dismissCacheMessage() }) {
-                        Text(text = "OK", color = ErumiPrimary)
                     }
                 },
                 containerColor = ErumiElevatedSurface

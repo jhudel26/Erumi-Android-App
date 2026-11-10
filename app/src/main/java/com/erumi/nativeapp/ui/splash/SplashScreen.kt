@@ -48,7 +48,7 @@ fun ErumiSplashScreen(
     }
 
     LaunchedEffect(Unit) {
-        delay(1100)
+        delay(500)
         minTimeElapsed = true
     }
 

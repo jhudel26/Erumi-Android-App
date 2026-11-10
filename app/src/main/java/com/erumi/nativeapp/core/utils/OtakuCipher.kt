@@ -6,11 +6,7 @@ object OtakuCipher {
     fun deobfuscate(blob: String): String {
         return try {
             val cleaned = blob.trim().replace("\n", "").replace("\r", "")
-            val raw = try {
-                android.util.Base64.decode(cleaned, android.util.Base64.DEFAULT)
-            } catch (t: Throwable) {
-                java.util.Base64.getDecoder().decode(cleaned)
-            }
+            val raw = android.util.Base64.decode(cleaned, android.util.Base64.DEFAULT)
             val keyBytes = KEY.toByteArray(Charsets.UTF_8)
             val out = ByteArray(raw.size)
             for (i in raw.indices) {

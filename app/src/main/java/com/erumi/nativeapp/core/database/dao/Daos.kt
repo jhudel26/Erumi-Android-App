@@ -87,6 +87,9 @@ interface DownloadDao {
     @Query("SELECT * FROM downloads WHERE LOWER(animeTitle) = LOWER(:animeTitle) AND episodeNumber = :episodeNumber LIMIT 1")
     suspend fun getDownloadByEpisode(animeTitle: String, episodeNumber: Int): DownloadEntity?
 
+    @Query("SELECT * FROM downloads WHERE animeId = :animeId LIMIT 1")
+    suspend fun getDownloadByAnimeId(animeId: String): DownloadEntity?
+
     @Query("DELETE FROM downloads WHERE id = :id")
     suspend fun deleteDownload(id: String)
 

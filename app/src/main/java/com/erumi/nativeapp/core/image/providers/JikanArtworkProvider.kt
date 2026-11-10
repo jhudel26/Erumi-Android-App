@@ -79,7 +79,15 @@ class JikanArtworkProvider(private val client: OkHttpClient = ApiClient.okHttpCl
     }
 
     private fun parseJikanAnime(data: JsonObject): JikanAnime {
-        val titles = data.getAsJsonObject("titles")
+        // Jikan v4 returns "titles" as a JSON array of {type, title} objects (B8)
+        val titlesArray = data.getAsJsonArray("titles")
+        val titleEnglish = titlesArray?.firstOrNull {
+            it.asJsonObject.get("type")?.asString == "English"
+        }?.asJsonObject?.get("title")?.asString
+        val titleJapanese = titlesArray?.firstOrNull {
+            it.asJsonObject.get("type")?.asString == "Japanese"
+        }?.asJsonObject?.get("title")?.asString
+
         val images = data.getAsJsonObject("images")
         val jpg = images?.getAsJsonObject("jpg")
         val webp = images?.getAsJsonObject("webp")
@@ -87,8 +95,8 @@ class JikanArtworkProvider(private val client: OkHttpClient = ApiClient.okHttpCl
         return JikanAnime(
             malId = data.get("mal_id")?.asInt ?: 0,
             title = data.get("title")?.asString ?: "",
-            titleEnglish = titles?.get("english")?.asString,
-            titleJapanese = titles?.get("japanese")?.asString,
+            titleEnglish = titleEnglish,
+            titleJapanese = titleJapanese,
             imageUrl = jpg?.get("large_image_url")?.asString ?: jpg?.get("image_url")?.asString,
             webpUrl = webp?.get("large_image_url")?.asString ?: webp?.get("image_url")?.asString,
             year = data.get("year")?.asInt,

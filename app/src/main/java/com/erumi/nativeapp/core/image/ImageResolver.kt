@@ -1,4 +1,4 @@
-package com.erumi.nativeapp.core.image
+﻿package com.erumi.nativeapp.core.image
 
 import android.content.Context
 import android.util.Log
@@ -10,6 +10,8 @@ import com.erumi.nativeapp.domain.model.Anime
 import com.erumi.nativeapp.engine.sources.AniListSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Collections
+import java.util.LinkedHashMap
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -24,9 +26,15 @@ class ImageResolver(private val context: Context) {
     private val jikanProvider = JikanArtworkProvider()
     private val kitsuProvider = KitsuArtworkProvider()
 
-    // In-memory cache to avoid redundant concurrent requests
-    private val ongoingResolutions = ConcurrentHashMap<String, String>()
-    private val inProgress = ConcurrentHashMap<String, Boolean>()
+    // In-memory LRU cache (bounded to 500 entries) to avoid redundant concurrent requests
+    private val ongoingResolutions: MutableMap<String, String> = Collections.synchronizedMap(
+        object : LinkedHashMap<String, String>(16, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>) = size > 500
+        }
+    )
+    // Separate in-progress flags for poster and banner to avoid blocking each other (B1)
+    private val inProgressPoster = ConcurrentHashMap<String, Boolean>()
+    private val inProgressBanner = ConcurrentHashMap<String, Boolean>()
 
     // Cache expiry: 7 days in milliseconds
     private val CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000L
@@ -41,14 +49,14 @@ class ImageResolver(private val context: Context) {
 
         Log.d(TAG, "Resolving poster for: $title (id: $animeId)")
 
-        // Check if already in progress
-        if (inProgress[animeId] == true) {
+        // Check if poster resolution already in progress
+        if (inProgressPoster[animeId] == true) {
             Log.d(TAG, "Resolution already in progress for: $title")
             return@withContext null
         }
 
-        // Mark as in progress
-        inProgress[animeId] = true
+        // Mark poster as in progress
+        inProgressPoster[animeId] = true
 
         try {
             // Check memory cache for ongoing resolution
@@ -117,8 +125,8 @@ class ImageResolver(private val context: Context) {
             Log.e(TAG, "Error resolving poster for $title: ${e.message}", e)
             null
         } finally {
-            // Clear in-progress flag to allow retries after error
-            inProgress.remove(animeId)
+            // Clear in-progress poster flag to allow retries after error
+            inProgressPoster.remove(animeId)
         }
     }
 
@@ -131,14 +139,14 @@ class ImageResolver(private val context: Context) {
 
         Log.d(TAG, "Resolving banner for: $title (id: $animeId)")
 
-        // Check if already in progress
-        if (inProgress[animeId] == true) {
-            Log.d(TAG, "Resolution already in progress for: $title")
+        // Check if banner resolution already in progress (separate flag from poster)
+        if (inProgressBanner[animeId] == true) {
+            Log.d(TAG, "Banner resolution already in progress for: $title")
             return@withContext null
         }
 
-        // Mark as in progress
-        inProgress[animeId] = true
+        // Mark banner as in progress
+        inProgressBanner[animeId] = true
 
         try {
             // Check database cache
@@ -163,8 +171,8 @@ class ImageResolver(private val context: Context) {
             Log.e(TAG, "Error resolving banner for $title: ${e.message}", e)
             null
         } finally {
-            // Clear in-progress flag to allow retries after error
-            inProgress.remove(animeId)
+            // Clear in-progress banner flag to allow retries after error
+            inProgressBanner.remove(animeId)
         }
     }
 
@@ -372,10 +380,22 @@ class ImageResolver(private val context: Context) {
         try {
             database.imageCacheDao().deleteCache(animeId)
             ongoingResolutions.remove(animeId)
-            inProgress.remove(animeId)
+            inProgressPoster.remove(animeId)
+            inProgressBanner.remove(animeId)
             Log.d(TAG, "Cleared cache for animeId: $animeId")
         } catch (e: Exception) {
             Log.e(TAG, "Error clearing cache for animeId $animeId: ${e.message}")
+        }
+    }
+
+    companion object {
+        @Volatile
+        private var instance: ImageResolver? = null
+
+        fun getInstance(context: Context): ImageResolver {
+            return instance ?: synchronized(this) {
+                instance ?: ImageResolver(context.applicationContext).also { instance = it }
+            }
         }
     }
 }

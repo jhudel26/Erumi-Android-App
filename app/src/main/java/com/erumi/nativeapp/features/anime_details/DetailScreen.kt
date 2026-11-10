@@ -101,8 +101,8 @@ fun DetailScreen(
     viewModel: DetailViewModel
 ) {
     val context = LocalContext.current
-    val imageResolver = remember { ImageResolver(context) }
-    val coroutineScope = rememberCoroutineScope()
+    val imageResolver = remember { ImageResolver.getInstance(context) }
+
     val state by viewModel.uiState.collectAsState()
     var isExpandedSynopsis by remember { mutableStateOf(false) }
     var isGridMode by remember { mutableStateOf(false) }

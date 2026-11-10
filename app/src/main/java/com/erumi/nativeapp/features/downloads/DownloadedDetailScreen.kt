@@ -1,4 +1,4 @@
-package com.erumi.nativeapp.features.downloads
+﻿package com.erumi.nativeapp.features.downloads
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -130,7 +130,7 @@ fun DownloadedDetailScreen(
             }
         } else {
             val context = LocalContext.current
-            val imageResolver = remember { ImageResolver(context) }
+            val imageResolver = remember { ImageResolver.getInstance(context) }
             var resolvedPoster by remember { mutableStateOf(group.poster) }
 
             LaunchedEffect(group.animeTitle, group.poster) {
@@ -379,7 +379,7 @@ fun DownloadedDetailScreen(
                                     }
                                     DownloadStatus.FAILED -> {
                                         Text(
-                                            text = "⚠️ Download failed",
+                                        text = "⚠️ Download failed",
                                             style = MaterialTheme.typography.labelSmall,
                                             color = ErumiError
                                         )

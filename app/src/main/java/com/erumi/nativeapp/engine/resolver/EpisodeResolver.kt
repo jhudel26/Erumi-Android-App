@@ -20,6 +20,12 @@ class EpisodeResolver(
     private val allAnimeSource: AllAnimeSource = AllAnimeSource()
 ) {
 
+    companion object {
+        val TITLE_ANILIST_OVERRIDES = mapOf(
+            "magic repo man" to 202250
+        )
+    }
+
     private val episodesMemoryCache = mutableMapOf<String, List<Episode>>()
     private val streamMemoryCache = mutableMapOf<String, StreamSource>()
 
@@ -48,7 +54,7 @@ class EpisodeResolver(
 
         // Alternate catalog titles from a *validated* AniList hit.
         // Important: once English matches AniList, trust that media's romaji/synonyms as
-        // HiAnime search keys. Do NOT require isValidTitleMatch(english, romaji) — those
+        // HiAnime search keys. Do NOT require isValidTitleMatch(english, romaji) - those
         // share almost no words (Magic Repo Man ↔ Kashita Maryoku wa Revo Barai…).
         val searchItems = aniListSource.search(cleanTitle)
         android.util.Log.d("ErumiResolver", "AniList search returned ${searchItems.size} results")
@@ -74,9 +80,10 @@ class EpisodeResolver(
 
         // SAFETY FALLBACK: Magic Repo Man romaji title via AniList ID
         // AniList search returns 0 results for this anime, so we fetch by known ID
-        if (cleanTitle.contains("magic repo man", ignoreCase = true)) {
-            android.util.Log.d("ErumiResolver", "Trying Magic Repo Man fallback via AniList ID 202250")
-            val anilistMetadata = aniListSource.fetchById(202250)
+        val overrideId = TITLE_ANILIST_OVERRIDES.entries.firstOrNull { cleanTitle.contains(it.key, ignoreCase = true) }?.value
+        if (overrideId != null) {
+            android.util.Log.d("ErumiResolver", "Trying title override fallback via AniList ID $overrideId")
+            val anilistMetadata = aniListSource.fetchById(overrideId)
             if (anilistMetadata != null) {
                 android.util.Log.d("ErumiResolver", "  Fetched metadata from AniList: ${anilistMetadata.title} (romaji: ${anilistMetadata.romajiName})")
                 val candidates = buildCandidateTitlesFromMetadata(anilistMetadata, cleanTitle)
@@ -145,7 +152,7 @@ class EpisodeResolver(
             }
         }
 
-        // 1c. Trusted AniList alts (romaji / synonyms) — same as web_server get_stream 1c
+        // 1c. Trusted AniList alts (romaji / synonyms) - same as web_server get_stream 1c
         val searchItems = aniListSource.search(cleanTitle)
         android.util.Log.d("ErumiResolver", "AniList search returned ${searchItems.size} results for: $cleanTitle")
         val match = pickValidAniListMatch(cleanTitle, searchItems)
@@ -170,9 +177,10 @@ class EpisodeResolver(
 
         // SAFETY FALLBACK: Magic Repo Man romaji title via AniList ID
         // AniList search returns 0 results for this anime, so we fetch by known ID
-        if (cleanTitle.contains("magic repo man", ignoreCase = true)) {
-            android.util.Log.d("ErumiResolver", "Trying Magic Repo Man fallback via AniList ID 202250")
-            val anilistMetadata = aniListSource.fetchById(202250)
+        val overrideId = TITLE_ANILIST_OVERRIDES.entries.firstOrNull { cleanTitle.contains(it.key, ignoreCase = true) }?.value
+        if (overrideId != null) {
+            android.util.Log.d("ErumiResolver", "Trying title override fallback via AniList ID $overrideId")
+            val anilistMetadata = aniListSource.fetchById(overrideId)
             if (anilistMetadata != null) {
                 android.util.Log.d("ErumiResolver", "  Fetched metadata from AniList: ${anilistMetadata.title} (romaji: ${anilistMetadata.romajiName})")
                 val candidates = buildCandidateTitlesFromMetadata(anilistMetadata, cleanTitle)
@@ -248,7 +256,7 @@ class EpisodeResolver(
 
         // Add cleaned romaji (remove brackets)
         metadata.romajiName?.let { romaji ->
-            val cleaned = romaji.replace("[", " ").replace("]", " ").replace("【", " ").replace("】", " ")
+            val cleaned = romaji.replace("[", " ").replace("]", " ").replace("ã€", " ").replace("ã€‘", " ")
                 .replace(Regex("""\s+"""), " ").trim()
             if (cleaned.isNotEmpty() && cleaned != romaji) {
                 candidates.add(cleaned)
@@ -298,7 +306,7 @@ class EpisodeResolver(
             }
             // Also try a version with brackets cleaned (for titles like [Revo Barai])
             match.romajiName?.let { romaji ->
-                val cleaned = romaji.replace("[", " ").replace("]", " ").replace("【", " ").replace("】", " ")
+                val cleaned = romaji.replace("[", " ").replace("]", " ").replace("ã€", " ").replace("ã€‘", " ")
                     .replace(Regex("""\s+"""), " ").trim()
                 if (cleaned.isNotEmpty() && cleaned != romaji) {
                     add(cleaned)

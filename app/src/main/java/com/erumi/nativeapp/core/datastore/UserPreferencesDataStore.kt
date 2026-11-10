@@ -1,4 +1,4 @@
-package com.erumi.nativeapp.core.datastore
+﻿package com.erumi.nativeapp.core.datastore
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -22,6 +22,7 @@ class UserPreferencesDataStore(private val context: Context) {
         val DEFAULT_SUBTITLE_LANG = stringPreferencesKey("default_subtitle_lang")
         val SUBTITLE_SIZE = floatPreferencesKey("subtitle_size")
         val SKIP_INTRO = booleanPreferencesKey("skip_intro")
+        val SKIP_INTRO_SECONDS = intPreferencesKey("skip_intro_seconds")
         val WIFI_ONLY_DOWNLOADS = booleanPreferencesKey("wifi_only_downloads")
         val APP_THEME = stringPreferencesKey("app_theme")
     }
@@ -42,6 +43,7 @@ class UserPreferencesDataStore(private val context: Context) {
                 defaultSubtitleLang = preferences[PreferencesKeys.DEFAULT_SUBTITLE_LANG] ?: Constants.DEFAULT_SUB_LANG,
                 subtitleSize = preferences[PreferencesKeys.SUBTITLE_SIZE] ?: 1.0f,
                 skipIntro = preferences[PreferencesKeys.SKIP_INTRO] ?: Constants.DEFAULT_SKIP_INTRO,
+                skipIntroSeconds = preferences[PreferencesKeys.SKIP_INTRO_SECONDS] ?: Constants.DEFAULT_SKIP_INTRO_SECONDS,
                 wifiOnlyDownloads = preferences[PreferencesKeys.WIFI_ONLY_DOWNLOADS] ?: false,
                 appTheme = preferences[PreferencesKeys.APP_THEME] ?: "Dark Cinema"
             )
@@ -73,5 +75,13 @@ class UserPreferencesDataStore(private val context: Context) {
 
     suspend fun updateWifiOnlyDownloads(wifiOnly: Boolean) {
         context.dataStore.edit { it[PreferencesKeys.WIFI_ONLY_DOWNLOADS] = wifiOnly }
+    }
+
+    suspend fun updateAppTheme(theme: String) {
+        context.dataStore.edit { it[PreferencesKeys.APP_THEME] = theme }
+    }
+
+    suspend fun updateSkipIntroSeconds(seconds: Int) {
+        context.dataStore.edit { it[PreferencesKeys.SKIP_INTRO_SECONDS] = seconds }
     }
 }
