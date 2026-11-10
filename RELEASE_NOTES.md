@@ -176,7 +176,7 @@ No known issues documented for this release.
 
 | Version | Release Date |
 |---|---|
-| 1.2.0 | Not specified |
+| 1.2.0 | November 10, 2026|
 | 1.1.0 | November 9, 2026 |
 
 ---
