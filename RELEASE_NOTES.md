@@ -1,186 +1,186 @@
-# Release Notes - Erumi Native Android App
+# Erumi Native — Release Notes
 
-## Version 1.2.0 - Stability, Performance, & UX Refinements
-
-### 🐛 Critical & Stability Fixes
-- **Data Safety**: Removed `fallbackToDestructiveMigration()` from Room Database so user library data (history, watchlist, downloads) is protected across app updates.
-- **Split-Buffer Video Streaming**: Re-architected `DisguiseHeaderDataSource` to buffer up to 64 KB across packet chunk boundaries, preventing media stream corruption when CDN disguise headers span multiple reads.
-- **Legacy Android Fix**: Removed `java.util.Base64` fallback in `OtakuCipher` that caused `NoClassDefFoundError` crashes on Android versions below API 26.
-- **Jikan Artwork v4**: Corrected title extraction to handle Jikan v4's JSON array structure with proper language type filters.
-- **Collector & Coroutine Leak Fixes**: Isolated flow collectors in `DetailViewModel` and download listeners in `ErumiDownloadUtil` with lifecycle-bound supervision and cancellation.
-- **Mojibake / Character Encoding**: Restored all corrupted UTF-8 string symbols (`•`, `✓`, `★`, `⚠️`, `→`) across card, carousel, and download screens.
-
-### ⚡ Performance Improvements
-- **Singleton ImageResolver**: Hoisted `ImageResolver` into a shared singleton factory across all composables, eliminating redundant database instances and unifying in-memory LRU caching.
-- **Throttled Room Writes**: Reduced watch progress database writes in `PlayerViewModel` from 1-second ticks to a minimum 5-second delta.
-- **Targeted Database Lookups**: Replaced full-table scans with indexed DAO queries (`getDownloadByAnimeId`).
-- **Parallel Subtitle Downloads**: Accelerated offline download preparation by fetching subtitle tracks concurrently via `coroutineScope` and `async`/`awaitAll`.
-
-### ✨ UX & Feature Enhancements
-- **In-Screen Search & Filters**: Added real-time search bars to both **Watchlist** and **Watch History** screens.
-- **Watchlist Management**: Added long-press gesture with confirmation dialog to remove titles directly from the watchlist.
-- **Manual Progress Tracking**: Added `markEpisodeAsWatched()` in `DetailViewModel` to mark episodes as watched directly from the detail screen.
-- **Dynamic Subtitle Sizing**: Wired the user's subtitle size preference directly to ExoPlayer's `SubtitleView`.
-- **Configurable Intro Skipping**: Added customizable skip intro duration (defaults to 85 seconds) with smart suppression once skipped.
-- **Search Pagination**: Added page-based pagination (`loadNextPage()`) to the search screen.
-- **Android 13+ Notifications**: Added runtime permission requests for `POST_NOTIFICATIONS` to ensure foreground download progress notifications appear.
+This document contains the release history of **Erumi Native**, including new features, performance improvements, bug fixes, and technical updates.
 
 ---
-## Version 1.1.0 - Critical Bug Fixes & Download Enhancements
 
-### 🐛 Critical Bug Fixes
+## Version 1.2.0
+### Stability, Performance & User Experience Improvements
 
-**Fixed DisguiseHeaderDataSource Array Bounds Issue**
-- Resolved potential `ArrayIndexOutOfBoundsException` when parsing PNG disguise headers
-- Improved buffer bounds validation to prevent crashes during media streaming
-- Enhanced header parsing logic for better handling of split/chunked headers
+### Stability & Critical Fixes
 
-**Fixed ImageResolver Race Condition**
-- Resolved concurrent request deduplication issue that could cause null returns
-- Improved synchronization and cleanup behavior for in-progress resolutions
-- Added proper error handling and logging for image resolution failures
-- Enhanced cache management to prevent memory leaks
+- **Database Data Protection:** Removed `fallbackToDestructiveMigration()` from the Room database configuration to prevent user library data—including watch history, watchlists, and downloads—from being deleted during application updates.
+- **Improved Video Stream Handling:** Reworked `DisguiseHeaderDataSource` to support buffering up to 64 KB across packet boundaries, preventing stream corruption when CDN disguise headers span multiple reads.
+- **Legacy Android Compatibility:** Removed the `java.util.Base64` fallback in `OtakuCipher`, resolving `NoClassDefFoundError` crashes on Android versions below API 26.
+- **Jikan API Compatibility:** Updated artwork extraction to correctly handle the Jikan v4 JSON array structure and apply appropriate language-type filters.
+- **Lifecycle & Coroutine Management:** Improved flow collector and download listener lifecycle management in `DetailViewModel` and `ErumiDownloadUtil`, reducing the risk of coroutine and listener leaks.
+- **Character Encoding:** Fixed corrupted UTF-8 characters across cards, carousels, and download screens.
 
-**Fixed AnimeRepository Null Context Handling**
-- Added safe null checks for Context parameter in repository initialization
-- Improved error handling when ImageResolver fails to initialize
-- Ensured repository works correctly across all ViewModels with/without context
+### Performance Improvements
 
-**Fixed AniListSource JSON Null Handling**
-- Resolved `ClassCastException: JsonNull cannot be cast to JsonObject` errors
-- Added null-safe JSON parsing across all AniList API responses
-- **Result**: Significantly faster image loading on detail pages (no more slow fallback chain)
-- Fixed episode count resolution for series with partial metadata
+- **Shared Image Resolver:** Centralized `ImageResolver` through a singleton factory, reducing redundant database instances and providing consistent in-memory LRU caching.
+- **Optimized Watch Progress Updates:** Reduced database writes from one-second intervals to a minimum five-second progress delta.
+- **Efficient Database Queries:** Replaced full-table scans with targeted DAO queries, including `getDownloadByAnimeId`.
+- **Parallel Subtitle Downloads:** Improved offline download preparation by fetching subtitle tracks concurrently using Kotlin coroutines.
 
-### 🚀 High-Priority Improvements
+### Features & User Experience
+
+- **Watchlist Search:** Added real-time search functionality to the Watchlist screen.
+- **Watch History Search:** Added real-time search functionality to the Watch History screen.
+- **Watchlist Management:** Added long-press interactions with a confirmation dialog for removing titles.
+- **Manual Episode Tracking:** Added `markEpisodeAsWatched()` to allow users to mark episodes as watched directly from the anime detail screen.
+- **Customizable Subtitle Size:** Connected the user's subtitle size preference directly to ExoPlayer's `SubtitleView`.
+- **Configurable Intro Skipping:** Added customizable intro skip duration, with an 85-second default and automatic suppression after skipping.
+- **Paginated Search:** Implemented page-based pagination through `loadNextPage()` to improve search browsing.
+- **Android 13+ Notification Permission:** Added runtime permission handling for `POST_NOTIFICATIONS` to support foreground download progress notifications.
+
+---
+
+## Version 1.1.0
+### Critical Bug Fixes & Download Management Enhancements
+
+### Bug Fixes & Reliability
+
+- **DisguiseHeaderDataSource:** Fixed a potential `ArrayIndexOutOfBoundsException` when parsing PNG disguise headers. Improved buffer validation and handling of split or chunked headers.
+- **ImageResolver:** Resolved a concurrency issue in request deduplication that could result in null returns. Improved synchronization, cleanup, error handling, logging, and cache management.
+- **AnimeRepository:** Added safe handling for null `Context` parameters during repository initialization and improved ImageResolver initialization error handling.
+- **AniListSource:** Fixed `ClassCastException` errors caused by attempting to cast `JsonNull` to `JsonObject`. Added null-safe JSON parsing across AniList API responses.
+- **Episode Metadata:** Improved episode count resolution for titles with incomplete metadata.
+- **Image Loading:** Eliminated unnecessary fallback requests caused by AniList JSON parsing errors, improving image loading performance on detail pages.
+
+### Download Management Enhancements
+
+**Pause & Resume Downloads**
+
+- Added the ability to pause individual episode downloads.
+- Added the ability to resume paused downloads.
+- Persisted download states in the database.
+- Integrated pause and resume functionality with the Media3 APIs.
+
+**Download Queue Management**
+
+- Added **Pause All** to pause active downloads simultaneously.
+- Added **Resume All** to resume paused downloads.
+- Implemented real-time tracking of active downloads.
+- Improved control over multiple simultaneous downloads.
+
+**Background Downloads**
+
+- Enabled downloads to continue when the application is minimized or running in the background.
+- Added support for continuing downloads while switching between applications.
+- Added battery optimization exemption handling.
+- Supported downloads while the screen is off when battery optimization restrictions are disabled.
+
+> **Note:** Enable the Background Downloads option in Settings and follow the battery optimization instructions to use the full background download functionality.
+
+### Battery Optimization Settings
+
+- Added a dedicated **Background Downloads** setting.
+- Added a clear enabled/disabled status indicator.
+- Included instructions for configuring battery optimization.
+- Supported devices running Android 6.0 (API 23) and above.
+
+### Technical Improvements
 
 **Release Build Optimization**
-- Enabled code minification (`isMinifyEnabled = true`) for release builds
-- Enabled resource shrinking to reduce APK size
-- **Result**: Smaller, more efficient release APKs
 
-**Database Schema Management**
-- Enabled Room schema export (`exportSchema = true`)
-- Better migration planning and validation for future database updates
-- Improved long-term database maintenance
+- Enabled code minification using `isMinifyEnabled = true`.
+- Enabled resource shrinking to reduce release APK size.
 
-**Network Timeout Optimization**
-- Increased connect timeout: 15s → 30s
-- Increased read timeout: 25s → 60s (better for video streaming)
-- Increased write timeout: 20s → 30s
-- **Result**: More reliable streaming on slow connections
+**Database Management**
 
-**Enhanced Error Logging**
-- Added detailed error logging in HiAnimeSource and AniListSource
-- All network failures now log specific error context (query, anime title, episode number)
-- **Result**: Easier debugging and issue identification in production
+- Enabled Room schema export using `exportSchema = true`.
+- Improved database schema tracking and migration planning.
 
-### ✨ New Features
+**Network Configuration**
 
-**Download Management Enhancements**
+- Increased connection timeout from 15 to 30 seconds.
+- Increased read timeout from 25 to 60 seconds.
+- Increased write timeout from 20 to 30 seconds.
+- Improved reliability for media streaming on slower network connections.
 
-Pause/Resume Downloads
-- Added pause button for individual episode downloads
-- Added resume button for paused downloads
-- Download state persisted in database
-- Proper Media3 API integration for pause/resume functionality
+**Error Logging**
 
-Download Queue Management
-- Added "Pause All" button to stop all active downloads at once
-- Added "Resume All" button to restart all paused downloads
-- Real-time active download count tracking
-- Perfect for managing multiple downloads efficiently
+- Added more detailed error logging to `HiAnimeSource` and `AniListSource`.
+- Improved network failure diagnostics with contextual information, including search queries, anime titles, and episode numbers.
 
-Background Download Support
-- Downloads now continue when app is minimized
-- Downloads continue when user switches to another app
-- Added battery optimization exemption in Settings
-- Downloads continue even when screen is off (if battery optimization disabled)
-- **Note**: Requires user to enable "Background Downloads" in Settings for full functionality
+**Foreground Service Stability**
 
-Battery Optimization Settings
-- Added "Background Downloads" toggle in Settings
-- Clear UI showing current status (enabled/disabled)
-- Instructions for users to enable background downloads
-- Available on Android 6.0+ (API 23+)
+- Removed automatic download service initialization from `Application.onCreate`.
+- Changed service startup to occur only when required through Media3 `DownloadService`.
+- Improved foreground service lifecycle management.
+- Resolved startup crashes associated with download service initialization timing.
 
-**New Utility Classes**
-- `DownloadHelper.kt`: Battery optimization and background download utilities
-- Enhanced `ErumiDownloadUtil.kt` with pause/resume methods
-- Enhanced `UserLibraryRepository.kt` with queue management methods
+**Android Manifest Updates**
 
-### 🔧 Technical Improvements
+- Added `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission.
+- Updated service declarations for background download support.
+- Improved notification channel configuration.
 
-**Fixed Foreground Service Crash**
-- Removed automatic download service startup from Application.onCreate
-- Service now starts only when needed (via Media3 DownloadService)
-- Proper foreground service lifecycle management
-- **Result**: App no longer crashes on startup due to service initialization timing
+**Git Repository Maintenance**
 
-**Enhanced AndroidManifest**
-- Added `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission
-- Updated service declarations for better background support
-- Improved notification channel configuration
+- Updated `.gitignore` to exclude APK files and release artifacts from source control.
 
-**Improved Git Configuration**
-- Updated `.gitignore` to exclude APK files and release artifacts
-- Cleaner repository with only source code tracked
-
-### 📱 UI/UX Improvements
+### Interface & Navigation Improvements
 
 **Downloads Screen**
-- Added pause/resume buttons for individual downloads
-- Added "Pause All" / "Resume All" queue management buttons
-- Clear visual indicators for download states
-- Better user control over download queue
+
+- Added individual pause and resume controls.
+- Added Pause All and Resume All queue actions.
+- Improved download status indicators.
+- Enhanced download queue management.
 
 **Settings Screen**
-- Added "Background Downloads" section in Downloads settings
-- Clear status display (enabled/disabled)
-- User-friendly explanation of feature
-- Easy access to battery optimization settings
+
+- Added a Background Downloads section under Download settings.
+- Added download background activity status indicators.
+- Included user-friendly explanations and battery optimization instructions.
 
 **Navigation**
-- Integrated battery optimization intent handling in MainActivity
-- Connected Settings screen to permission flow
-- Smooth navigation for enabling background downloads
 
-### 🎯 Performance Improvements
+- Integrated battery optimization settings navigation into `MainActivity`.
+- Connected the Settings screen to the required permission flow.
+- Improved navigation for configuring background downloads.
+
+### Performance Improvements
 
 **Image Loading**
-- Fixed AniList JSON null handling that was causing slow fallback chain
-- Images now load significantly faster on detail pages
-- Reduced unnecessary API calls to Jikan/Kitsu fallbacks
+
+- Improved AniList response handling.
+- Reduced unnecessary fallback requests to Jikan and Kitsu.
+- Improved anime artwork loading performance on detail pages.
 
 **Download Performance**
-- Increased max parallel downloads: 2 → 3
-- Increased thread pool size: 3 → 4
-- Better download queue throughput
 
-### 🔒 Stability & Reliability
+- Increased maximum parallel downloads from 2 to 3.
+- Increased the download thread pool size from 3 to 4.
+- Improved download queue throughput.
 
-- No breaking changes to existing functionality
-- All existing features preserved
-- Backward compatible with current downloads
-- Graceful error handling throughout
-- Proper resource cleanup
+### Compatibility & Data Integrity
 
-### 📝 Known Issues
+- Preserved existing application functionality.
+- Maintained compatibility with existing downloads.
+- Added graceful error handling across the application.
+- Improved resource cleanup and service lifecycle management.
+- No database migrations required for this release.
+- No user data loss expected.
+- No additional user action required for existing downloads.
 
-- None at this time
+### Known Issues
 
-### 🔄 Migration Notes
-
-- No database migrations required
-- No user data loss
-- Existing downloads will continue to work
-- No action required from users
-
-### 🙏 Credits
-
-This release includes bug fixes, performance improvements, and new download management features to enhance the Erumi Native Android app experience.
+No known issues documented for this release.
 
 ---
 
-**Release Date**: November 9, 2026
-**Version**: 1.1.0
+## Release Information
+
+| Version | Release Date |
+|---|---|
+| 1.2.0 | Not specified |
+| 1.1.0 | November 9, 2026 |
+
+---
+
+**Erumi Native**
+
+*Built to make discovering, streaming, and managing anime a better experience.*
