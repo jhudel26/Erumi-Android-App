@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.kapt)
@@ -78,6 +78,7 @@ dependencies {
     // Networking & Serialization
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
+    implementation(libs.error.prone.annotations)
     implementation(libs.gson)
 
     // Image Loading
