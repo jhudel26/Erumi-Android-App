@@ -2,37 +2,106 @@ package com.erumi.nativeapp.features.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.HighQuality
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.erumi.nativeapp.BuildConfig
-import com.erumi.nativeapp.ui.theme.*
+import com.erumi.nativeapp.shared.ui.tour.ErumiTourStep
+import com.erumi.nativeapp.shared.ui.tour.LocalErumiTourState
+import com.erumi.nativeapp.shared.ui.tour.TourTargetKey
+import com.erumi.nativeapp.shared.ui.tour.tourHighlight
+import com.erumi.nativeapp.ui.theme.ErumiBackground
+import com.erumi.nativeapp.ui.theme.ErumiBorder
+import com.erumi.nativeapp.ui.theme.ErumiElevatedSurface
+import com.erumi.nativeapp.ui.theme.ErumiPrimary
+import com.erumi.nativeapp.ui.theme.ErumiPrimaryText
+import com.erumi.nativeapp.ui.theme.ErumiSecondary
+import com.erumi.nativeapp.ui.theme.ErumiSecondaryText
+import com.erumi.nativeapp.ui.theme.ErumiSurface
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(),
-    onRequestBatteryOptimization: (android.content.Intent) -> Unit = {}
+    onRequestBatteryOptimization: (android.content.Intent) -> Unit = {},
+    onSwitchToManga: () -> Unit = {},
+    onReplayTour: (() -> Unit)? = null
 ) {
     val state by viewModel.uiState.collectAsState()
     val settings = state.settings
 
     var showQualityDialog by remember { mutableStateOf(false) }
+    var showTutorial by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    val tourState = LocalErumiTourState.current
+
+    LaunchedEffect(tourState?.currentStep) {
+        when (tourState?.currentStep) {
+            ErumiTourStep.ANIME_SETTINGS_PLAYBACK -> listState.animateScrollToItem(0)
+            ErumiTourStep.ANIME_SETTINGS_DOWNLOADS -> listState.animateScrollToItem(1)
+            ErumiTourStep.ANIME_SETTINGS_EXPERIENCE -> listState.animateScrollToItem(3)
+            ErumiTourStep.ANIME_SETTINGS_STORAGE -> listState.animateScrollToItem(2)
+            else -> Unit
+        }
+    }
 
     // Show snackbar when cache cleared message arrives
     LaunchedEffect(state.cacheClearedMessage) {
@@ -57,16 +126,20 @@ fun SettingsScreen(
         }
     ) { padding ->
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp)
+            contentPadding = PaddingValues(top = 0.dp, bottom = 80.dp)
         ) {
             // PLAYER SETTINGS
             item {
-                SettingsSection(title = "PLAYBACK") {
+                SettingsSection(
+                    title = "PLAYBACK",
+                    modifier = Modifier.tourHighlight(TourTargetKey.ANIME_SETTINGS_PLAYBACK)
+                ) {
                     SettingsItem(
                         icon = Icons.Default.HighQuality,
                         title = "Preferred Quality",
@@ -103,7 +176,10 @@ fun SettingsScreen(
 
             // DOWNLOADS
             item {
-                SettingsSection(title = "DOWNLOADS") {
+                SettingsSection(
+                    title = "DOWNLOADS",
+                    modifier = Modifier.tourHighlight(TourTargetKey.ANIME_SETTINGS_DOWNLOADS)
+                ) {
                     SettingsSwitchItem(
                         icon = Icons.Default.Wifi,
                         title = "Download Over Wi-Fi Only",
@@ -136,12 +212,30 @@ fun SettingsScreen(
 
             // STORAGE & CACHE
             item {
-                SettingsSection(title = "STORAGE") {
+                SettingsSection(
+                    title = "STORAGE",
+                    modifier = Modifier.tourHighlight(TourTargetKey.ANIME_SETTINGS_STORAGE)
+                ) {
                     SettingsItem(
                         icon = Icons.Default.CleaningServices,
                         title = "Clear Image Cache",
                         subtitle = "Free up memory and disk cache for posters & banners",
                         onClick = { viewModel.clearImageCache() }
+                    )
+                }
+            }
+
+            // EXPERIENCE (Switch button in Settings)
+            item {
+                SettingsSection(
+                    title = "EXPERIENCE",
+                    modifier = Modifier.tourHighlight(TourTargetKey.ANIME_SETTINGS_EXPERIENCE)
+                ) {
+                    SettingsItem(
+                        icon = Icons.AutoMirrored.Filled.MenuBook,
+                        title = "Switch to Manhua",
+                        subtitle = "Read Manhua, Manhwa, and Manga",
+                        onClick = onSwitchToManga
                     )
                 }
             }
@@ -162,6 +256,31 @@ fun SettingsScreen(
                     )
                 }
             }
+
+            // HELP & TUTORIAL
+            item {
+                SettingsSection(title = "HELP & TUTORIAL") {
+                    SettingsItem(
+                        icon = Icons.AutoMirrored.Filled.HelpOutline,
+                        title = "App Tour & Walkthrough",
+                        subtitle = "Replay the feature guide for Anime screens and streaming",
+                        onClick = {
+                            if (onReplayTour != null) {
+                                onReplayTour()
+                            } else {
+                                showTutorial = true
+                            }
+                        }
+                    )
+                }
+            }
+        }
+
+        if (showTutorial) {
+            com.erumi.nativeapp.shared.ui.components.ExperienceTutorialDialog(
+                experience = com.erumi.nativeapp.manga.data.local.ErumiExperience.ANIME,
+                onDismiss = { showTutorial = false }
+            )
         }
 
         // Quality Dialog
@@ -205,9 +324,10 @@ fun SettingsScreen(
 @Composable
 fun SettingsSection(
     title: String,
+    modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column {
+    Column(modifier = modifier) {
         Text(
             text = title,
             style = MaterialTheme.typography.labelMedium.copy(

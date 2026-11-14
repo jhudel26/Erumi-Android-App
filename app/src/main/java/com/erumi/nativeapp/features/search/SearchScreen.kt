@@ -25,7 +25,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.erumi.nativeapp.domain.model.Anime
-import com.erumi.nativeapp.ui.components.AnimeCard
+import com.erumi.nativeapp.shared.ui.components.MediaEmptyState
+import com.erumi.nativeapp.shared.ui.components.MediaPosterCard
+import com.erumi.nativeapp.shared.ui.components.MediaSearchBar
+import com.erumi.nativeapp.shared.ui.components.ShimmerLoader
+import com.erumi.nativeapp.shared.ui.components.ShimmerType
 import com.erumi.nativeapp.ui.components.ErrorView
 import com.erumi.nativeapp.ui.theme.*
 
@@ -49,33 +53,10 @@ fun SearchScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Search Bar
-            OutlinedTextField(
-                value = state.query,
-                onValueChange = { viewModel.onQueryChange(it) },
-                placeholder = {
-                    Text(text = "Search anime by title...", color = ErumiMuted)
-                },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = ErumiPrimary)
-                },
-                trailingIcon = {
-                    if (state.query.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.onQueryChange("") }) {
-                            Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", tint = ErumiSecondaryText)
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = ErumiPrimary,
-                    unfocusedBorderColor = ErumiBorder,
-                    focusedContainerColor = ErumiElevatedSurface,
-                    unfocusedContainerColor = ErumiSurface,
-                    focusedTextColor = ErumiPrimaryText,
-                    unfocusedTextColor = ErumiPrimaryText
-                ),
-                modifier = Modifier.fillMaxWidth()
+            MediaSearchBar(
+                query = state.query,
+                onQueryChange = { viewModel.onQueryChange(it) },
+                placeholder = "Search anime by title..."
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -164,33 +145,26 @@ fun SearchScreen(
             } else {
                 // Search Results
                 if (state.isSearching) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = ErumiPrimary)
-                    }
+                    ShimmerLoader(
+                        type = ShimmerType.SEARCH,
+                        columns = GridCells.Fixed(3),
+                        itemCount = 9
+                    )
                 } else if (state.error != null) {
                     ErrorView(
                         message = state.error ?: "Search failed",
                         onRetry = { viewModel.performSearch(state.query) }
                     )
                 } else if (state.searchResults.isEmpty() && state.hasSearched) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "No anime found",
-                                style = MaterialTheme.typography.titleMedium.copy(color = ErumiSecondaryText)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Try searching with a different title or keyword",
-                                style = MaterialTheme.typography.bodySmall.copy(color = ErumiMuted)
-                            )
-                        }
-                    }
+                    MediaEmptyState(
+                        message = "No anime found",
+                        subtitle = "Try searching with a different title or keyword"
+                    )
                 } else {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(3),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                         contentPadding = PaddingValues(bottom = 80.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
@@ -206,7 +180,7 @@ fun SearchScreen(
                             items = state.searchResults,
                             key = { it.id }
                         ) { anime ->
-                            AnimeCard(
+                            MediaPosterCard(
                                 anime = anime,
                                 onClick = { onAnimeClick(anime) },
                                 modifier = Modifier.fillMaxWidth()

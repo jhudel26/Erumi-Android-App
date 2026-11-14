@@ -1,4 +1,4 @@
-﻿package com.erumi.nativeapp.ui.components
+package com.erumi.nativeapp.ui.components
 
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -64,81 +64,14 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
-fun ErumiTopBar() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            AsyncImage(
-                model = R.drawable.app_icon,
-                contentDescription = "Erumi Logo",
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(8.dp))
-            )
-            Column {
-                Text(
-                    text = "ERUMI",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.sp
-                    ),
-                    color = TealPrimary
-                )
-                Text(
-                    text = "Cinema Anime Streaming",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextDim
-                )
-            }
-        }
-    }
-}
-
-@Composable
 fun SectionHeader(
     title: String,
     onSeeAllClick: (() -> Unit)? = null
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .height(18.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(TealPrimary)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = TextPrimary
-            )
-        }
-        if (onSeeAllClick != null) {
-            Text(
-                text = "See All",
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = TealLight,
-                modifier = Modifier.clickable { onSeeAllClick() }
-            )
-        }
-    }
+    com.erumi.nativeapp.shared.ui.components.SectionHeader(
+        title = title,
+        onSeeAllClick = onSeeAllClick
+    )
 }
 
 @Composable
@@ -147,154 +80,11 @@ fun AnimeCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val imageResolver = remember { ImageResolver.getInstance(context) }
-    var resolvedPoster by remember { mutableStateOf(anime.poster) }
-    var isLoading by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
-
-    // Only resolve if poster is null/blank
-    LaunchedEffect(anime.id, anime.poster) {
-        if (anime.poster.isNullOrBlank() && !isLoading) {
-            isLoading = true
-            coroutineScope.launch {
-                val resolved = imageResolver.resolvePosterUrl(anime)
-                resolvedPoster = resolved
-                isLoading = false
-            }
-        } else {
-            resolvedPoster = anime.poster
-        }
-    }
-
-    PressScale(onClick = onClick, modifier = modifier.width(135.dp)) {
-        Column(
-            modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(190.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(BgCard)
-                    .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
-            ) {
-                // Show branded placeholder while resolving, otherwise show actual image
-                if (isLoading) {
-                    ErumiImagePlaceholder(
-                        modifier = Modifier.fillMaxSize(),
-                        title = anime.title
-                    )
-                } else {
-                    SubcomposeAsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(resolvedPoster)
-                            .crossfade(true)
-                            .memoryCachePolicy(CachePolicy.ENABLED)
-                            .diskCachePolicy(CachePolicy.ENABLED)
-                            .build(),
-                        contentDescription = anime.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                        loading = {
-                            ErumiImagePlaceholder(
-                                modifier = Modifier.fillMaxSize(),
-                                title = anime.title
-                            )
-                        },
-                        error = {
-                            ErumiImagePlaceholder(
-                                modifier = Modifier.fillMaxSize(),
-                                title = anime.title
-                            )
-                        }
-                    )
-                }
-
-                // Dark vignette gradient overlay
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
-                                startY = 100f
-                            )
-                        )
-                )
-
-                // Rating Star Tag (Top-End)
-                anime.score?.let { score ->
-                    if (score > 0) {
-                        Row(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(6.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(BgMain.copy(alpha = 0.85f))
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Star,
-                                contentDescription = "Rating",
-                                tint = WarningAmber,
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Spacer(modifier = Modifier.width(2.dp))
-                            Text(
-                                text = String.format("%.1f", score),
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = TextPrimary
-                            )
-                        }
-                    }
-                }
-
-                // Episode Tag (Bottom-Start)
-                if (anime.episodes > 0) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(6.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(TealDark.copy(alpha = 0.9f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = "EP ${anime.episodes}",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = TealLight
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = anime.englishName ?: anime.title,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary
-                ),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            val yearOrFormat = listOfNotNull(anime.releaseYear?.toString(), anime.format ?: "TV").joinToString(" \u2022 ")
-            if (yearOrFormat.isNotBlank()) {
-                Text(
-                    text = yearOrFormat,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = TextSecondary
-                    ),
-                    maxLines = 1
-                )
-            }
-        }
-    }
+    com.erumi.nativeapp.shared.ui.components.MediaPosterCard(
+        anime = anime,
+        onClick = onClick,
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -303,134 +93,11 @@ fun ContinueWatchingCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val imageResolver = remember { ImageResolver.getInstance(context) }
-    var resolvedPoster by remember { mutableStateOf(progress.poster) }
-    var isLoading by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
-
-    LaunchedEffect(progress.animeId, progress.poster) {
-        if (progress.poster.isNullOrBlank() && !isLoading) {
-            isLoading = true
-            coroutineScope.launch {
-                val anime = com.erumi.nativeapp.domain.model.Anime(
-                    id = progress.animeId,
-                    title = progress.animeTitle,
-                    poster = null
-                )
-                val resolved = imageResolver.resolvePosterUrl(anime)
-                resolvedPoster = resolved
-                isLoading = false
-            }
-        } else {
-            resolvedPoster = progress.poster
-        }
-    }
-
-    PressScale(onClick = onClick, modifier = modifier.width(220.dp).height(115.dp)) {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(14.dp))
-                .background(BgSurfaceElevated)
-                .border(1.dp, BorderSubtle, RoundedCornerShape(14.dp))
-        ) {
-            if (isLoading) {
-                ErumiImagePlaceholder(
-                    modifier = Modifier.fillMaxSize(),
-                    title = progress.animeTitle
-                )
-            } else {
-                SubcomposeAsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(resolvedPoster)
-                        .crossfade(true)
-                        .memoryCachePolicy(CachePolicy.ENABLED)
-                        .diskCachePolicy(CachePolicy.ENABLED)
-                        .build(),
-                    contentDescription = progress.animeTitle,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                    loading = {
-                        ErumiImagePlaceholder(
-                            modifier = Modifier.fillMaxSize(),
-                            title = progress.animeTitle
-                        )
-                    },
-                    error = {
-                        ErumiImagePlaceholder(
-                            modifier = Modifier.fillMaxSize(),
-                            title = progress.animeTitle
-                        )
-                    }
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.3f),
-                                Color.Black.copy(alpha = 0.88f)
-                            )
-                        )
-                    )
-            )
-
-            // Center Play Circle
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(TealPrimary.copy(alpha = 0.9f))
-                    .align(Alignment.Center),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.PlayArrow,
-                    contentDescription = "Resume",
-                    tint = BgMain,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            // Bottom Info & Progress Bar
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .padding(10.dp)
-            ) {
-                Text(
-                    text = progress.animeTitle,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "Episode ${progress.episodeNumber}",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = TealLight,
-                        fontWeight = FontWeight.Medium
-                    )
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                LinearProgressIndicator(
-                    progress = { progress.progressPercent },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(3.dp)
-                        .clip(RoundedCornerShape(2.dp)),
-                    color = TealPrimary,
-                    trackColor = BorderSubtle
-                )
-            }
-        }
-    }
+    com.erumi.nativeapp.shared.ui.components.ContinueMediaCard(
+        progress = progress,
+        onClick = onClick,
+        modifier = modifier
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -549,7 +216,7 @@ fun HeroCarousel(
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    BgMain.copy(alpha = 0.5f),
+                                    ErumiBackground.copy(alpha = 0.5f),
                                     Color.Transparent
                                 )
                             )
@@ -563,9 +230,9 @@ fun HeroCarousel(
                         .background(
                             Brush.verticalGradient(
                                 0f to Color.Transparent,
-                                0.35f to BgMain.copy(alpha = 0.5f),
-                                0.8f to BgMain.copy(alpha = 0.95f),
-                                1f to BgMain
+                                0.35f to ErumiBackground.copy(alpha = 0.5f),
+                                0.8f to ErumiBackground.copy(alpha = 0.95f),
+                                1f to ErumiBackground
                             )
                         )
                 )
@@ -582,7 +249,7 @@ fun HeroCarousel(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(4.dp))
-                                .background(TealPrimary)
+                                .background(ErumiPrimary)
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                         ) {
                             Text(
@@ -591,14 +258,14 @@ fun HeroCarousel(
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.8.sp
                                 ),
-                                color = BgMain
+                                color = ErumiBackground
                             )
                         }
                         if (anime.releaseYear != null) {
                             Text(
                                 text = "${anime.releaseYear}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = TextSecondary
+                                color = ErumiSecondaryText
                             )
                         }
                         if (anime.score != null) {
@@ -627,21 +294,21 @@ fun HeroCarousel(
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Button(
                             onClick = { (onWatchClick ?: onAnimeClick).invoke(anime) },
-                            colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
+                            colors = ButtonDefaults.buttonColors(containerColor = ErumiPrimary),
                             shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.PlayArrow,
                                 contentDescription = "Watch Now",
-                                tint = BgMain,
+                                tint = ErumiBackground,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "Watch Now",
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                color = BgMain
+                                color = ErumiBackground
                             )
                         }
 
@@ -652,7 +319,7 @@ fun HeroCarousel(
                                 brush = Brush.horizontalGradient(listOf(BorderSubtle, BorderSubtle))
                             ),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                         ) {
                             Text(
                                 text = "Details",
@@ -686,7 +353,7 @@ fun HeroCarousel(
                             .height(6.dp)
                             .clip(RoundedCornerShape(3.dp))
                             .background(
-                                if (isSelected) TealPrimary else TextSecondary.copy(alpha = 0.35f)
+                                if (isSelected) ErumiPrimary else ErumiSecondaryText.copy(alpha = 0.35f)
                             )
                             .clickable {
                                 coroutineScope.launch {
@@ -700,20 +367,7 @@ fun HeroCarousel(
     }
 }
 
-@Composable
-fun HeroBanner(
-    anime: Anime,
-    onWatchClick: () -> Unit,
-    onDetailsClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    SpotlightHeroBanner(
-        anime = anime,
-        onWatchClick = onWatchClick,
-        onDetailsClick = onDetailsClick,
-        modifier = modifier
-    )
-}
+
 
 @Composable
 fun SpotlightHeroBanner(
@@ -782,8 +436,8 @@ fun SpotlightHeroBanner(
                     Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            BgMain.copy(alpha = 0.6f),
-                            BgMain.copy(alpha = 0.95f)
+                            ErumiBackground.copy(alpha = 0.6f),
+                            ErumiBackground.copy(alpha = 0.95f)
                         )
                     )
                 )
@@ -801,20 +455,20 @@ fun SpotlightHeroBanner(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
-                        .background(TealPrimary)
+                        .background(ErumiPrimary)
                         .padding(horizontal = 8.dp, vertical = 2.dp)
                 ) {
                     Text(
                         text = "FEATURED",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
-                        color = BgMain
+                        color = ErumiBackground
                     )
                 }
                 if (anime.releaseYear != null) {
                     Text(
                         text = "${anime.releaseYear}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary
+                        color = ErumiSecondaryText
                     )
                 }
                 if (anime.score != null) {
@@ -840,21 +494,21 @@ fun SpotlightHeroBanner(
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(
                     onClick = onWatchClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
+                    colors = ButtonDefaults.buttonColors(containerColor = ErumiPrimary),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.PlayArrow,
                         contentDescription = "Watch Now",
-                        tint = BgMain,
+                        tint = ErumiBackground,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Watch Now",
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        color = BgMain
+                        color = ErumiBackground
                     )
                 }
 
@@ -952,36 +606,11 @@ fun ErrorView(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    com.erumi.nativeapp.shared.ui.components.MediaErrorState(
+        message = message,
+        onRetry = onRetry,
         modifier = modifier
-            .fillMaxWidth()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.WifiOff,
-            contentDescription = null,
-            tint = TextDim,
-            modifier = Modifier.size(48.dp)
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = onRetry,
-            colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
-            shape = RoundedCornerShape(10.dp)
-        ) {
-            Icon(imageVector = Icons.Default.Refresh, contentDescription = null, tint = BgMain)
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(text = "Retry", color = BgMain, fontWeight = FontWeight.Bold)
-        }
-    }
+    )
 }
 
 /**
@@ -1011,13 +640,13 @@ fun ErumiImagePlaceholder(
         end = Offset(translateAnim + 200, 0f)
     )
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
                         TealDark.copy(alpha = 0.8f),
-                        TealPrimary.copy(alpha = 0.6f)
+                        ErumiPrimary.copy(alpha = 0.6f)
                     )
                 )
             )
@@ -1029,47 +658,110 @@ fun ErumiImagePlaceholder(
                 .background(shimmerBrush)
         )
 
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Branding image on the left
-            AsyncImage(
-                model = R.drawable.fullbodybranding,
-                contentDescription = "Erumi",
-                modifier = Modifier.size(120.dp),
-                alpha = 0.8f
-            )
+        val isCompactWidth = maxWidth < 180.dp
+        val isCompactHeight = maxHeight < 140.dp
 
-            Spacer(modifier = Modifier.width(32.dp))
-
-            // Title on the right
+        if (isCompactWidth) {
+            // Vertical compact layout for narrow cards (e.g. poster cards 120-135dp)
             Column(
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
+                AsyncImage(
+                    model = R.drawable.app_icon,
+                    contentDescription = "Erumi",
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    alpha = 0.85f
+                )
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "ERUMI",
-                    style = MaterialTheme.typography.headlineMedium.copy(
+                    style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 3.sp
+                        letterSpacing = 1.sp
                     ),
-                    color = BgMain.copy(alpha = 0.9f)
+                    color = ErumiBackground.copy(alpha = 0.9f)
                 )
-                if (title.isNotBlank() && title != "Erumi") {
-                    Spacer(modifier = Modifier.height(8.dp))
+            }
+        } else if (isCompactHeight) {
+            // Horizontal compact layout for wide but short cards (e.g. continue watching 115dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AsyncImage(
+                    model = R.drawable.app_icon,
+                    contentDescription = "Erumi",
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    alpha = 0.85f
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(
-                        text = title,
+                        text = "ERUMI",
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp
                         ),
-                        color = BgMain.copy(alpha = 0.7f),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        color = ErumiBackground.copy(alpha = 0.9f)
                     )
+                }
+            }
+        } else {
+            // Full spacious branding layout for banners and large dialogs
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AsyncImage(
+                    model = R.drawable.fullbodybranding,
+                    contentDescription = "Erumi",
+                    modifier = Modifier.size(120.dp),
+                    alpha = 0.8f
+                )
+
+                Spacer(modifier = Modifier.width(24.dp))
+
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = "ERUMI",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 3.sp
+                        ),
+                        color = ErumiBackground.copy(alpha = 0.9f)
+                    )
+                    if (title.isNotBlank() && title != "Erumi") {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
+                            color = ErumiBackground.copy(alpha = 0.7f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }

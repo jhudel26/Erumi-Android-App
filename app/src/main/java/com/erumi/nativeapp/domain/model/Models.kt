@@ -33,7 +33,13 @@ data class Episode(
     val epId: String = "",
     val title: String = "Episode $episodeNumber",
     val thumbnail: String? = null
-)
+) : com.erumi.nativeapp.shared.domain.models.MediaChapter {
+    override val chapterId: String get() = if (epId.isNotBlank()) epId else episodeNumber.toString()
+    override val chapterName: String get() = title
+    override val chapterNumber: Float get() = episodeNumber.toFloat()
+    override val isReadOrWatched: Boolean get() = false
+    override val isOfflineAvailable: Boolean get() = false
+}
 
 data class SubtitleTrack(
     val label: String,
@@ -68,17 +74,27 @@ data class WatchProgress(
     val positionMs: Long,
     val durationMs: Long,
     val updatedAt: Long = System.currentTimeMillis()
-) {
+) : com.erumi.nativeapp.shared.domain.models.MediaProgress {
     val progressPercent: Float
         get() = if (durationMs > 0) (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) else 0f
+
+    override val mediaId: String get() = animeId
+    override val mediaTitle: String get() = animeTitle
+    override val mediaCoverUrl: String? get() = poster
+    override val mediaSubtitle: String get() = "Episode $episodeNumber"
+    override val progressFraction: Float get() = progressPercent
+    override val progressPercentage: Int get() = (progressPercent * 100).toInt()
+    override val lastUpdated: Long get() = updatedAt
 }
 
 enum class DownloadStatus {
     PENDING,
+    QUEUED,
     DOWNLOADING,
     COMPLETED,
     FAILED,
-    PAUSED
+    PAUSED,
+    CANCELLED
 }
 
 data class DownloadItem(

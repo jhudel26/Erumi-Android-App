@@ -12,8 +12,8 @@ android {
         applicationId = "com.erumi.nativeapp"
         minSdk = 26
         targetSdk = 34
-        versionCode = 4
-        versionName = "1.2.0"
+        versionCode = 5
+        versionName = "1.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.error.prone.annotations)
     implementation(libs.gson)
+    implementation(libs.jsoup)
 
     // Image Loading
     implementation(libs.coil.compose)

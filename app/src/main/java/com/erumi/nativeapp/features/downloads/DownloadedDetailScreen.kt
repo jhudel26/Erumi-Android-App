@@ -1,4 +1,4 @@
-﻿package com.erumi.nativeapp.features.downloads
+package com.erumi.nativeapp.features.downloads
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -36,6 +36,7 @@ import com.erumi.nativeapp.core.image.ImageResolver
 import com.erumi.nativeapp.domain.model.Anime
 import com.erumi.nativeapp.domain.model.DownloadItem
 import com.erumi.nativeapp.domain.model.DownloadStatus
+import com.erumi.nativeapp.shared.ui.components.DownloadStatusBadge
 import com.erumi.nativeapp.ui.components.ErumiImagePlaceholder
 import com.erumi.nativeapp.ui.components.ShimmerLoadingPlaceholder
 import com.erumi.nativeapp.ui.theme.*
@@ -61,13 +62,13 @@ fun DownloadedDetailScreen(
     var showDeleteAllDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        containerColor = BgMain,
+        containerColor = ErumiBackground,
         topBar = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -81,7 +82,7 @@ fun DownloadedDetailScreen(
                     }
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Offline Downloads",
+                        text = "Downloads",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                         color = TextPrimary
                     )
@@ -122,9 +123,9 @@ fun DownloadedDetailScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     Button(
                         onClick = onBackClick,
-                        colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                        colors = ButtonDefaults.buttonColors(containerColor = ErumiPrimary)
                     ) {
-                        Text("Back to Downloads", color = BgMain, fontWeight = FontWeight.Bold)
+                        Text("Back to Downloads", color = ErumiBackground, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -156,7 +157,7 @@ fun DownloadedDetailScreen(
                     .padding(padding)
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 40.dp)
+                contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp)
             ) {
                 // 1. Anime Info Card Header
                 item {
@@ -229,7 +230,7 @@ fun DownloadedDetailScreen(
                                 Text(
                                     text = "Total storage: $totalMb MB",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = TextSecondary
+                                    color = ErumiSecondaryText
                                 )
                             }
 
@@ -246,21 +247,21 @@ fun DownloadedDetailScreen(
                                             group.poster
                                         )
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
+                                    colors = ButtonDefaults.buttonColors(containerColor = ErumiPrimary),
                                     shape = RoundedCornerShape(8.dp),
                                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.PlayArrow,
                                         contentDescription = null,
-                                        tint = BgMain,
+                                        tint = ErumiBackground,
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = "Play Episode ${firstPlayableEp.episodeNumber}",
                                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = BgMain
+                                        color = ErumiBackground
                                     )
                                 }
                             }
@@ -336,7 +337,7 @@ fun DownloadedDetailScreen(
                                         fontWeight = FontWeight.ExtraBold,
                                         lineHeight = 13.sp
                                     ),
-                                    color = TealPrimary,
+                                    color = ErumiPrimary,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
                             }
@@ -345,53 +346,16 @@ fun DownloadedDetailScreen(
                                 Text(
                                     text = "Episode ${ep.episodeNumber}",
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = TextPrimary
+                                    color = ErumiPrimaryText
                                 )
 
                                 Spacer(modifier = Modifier.height(2.dp))
 
-                                when (ep.status) {
-                                    DownloadStatus.COMPLETED -> {
-                                        Text(
-                                            text = if (epSizeMb > 0) "\u2713 Ready Offline \u2022 $epSizeMb MB" else "\u2713 Ready Offline",
-                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                                            color = SuccessGreen
-                                        )
-                                    }
-                                    DownloadStatus.DOWNLOADING -> {
-                                        Column {
-                                            LinearProgressIndicator(
-                                                progress = { (ep.progress / 100f).coerceIn(0f, 1f) },
-                                                modifier = Modifier
-                                                    .fillMaxWidth(0.8f)
-                                                    .height(4.dp)
-                                                    .clip(RoundedCornerShape(2.dp)),
-                                                color = TealPrimary,
-                                                trackColor = BgSurfaceElevated
-                                            )
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Text(
-                                                text = "Downloading ${ep.progress}% \u2022 ${if (epSizeMb > 0) "$epSizeMb MB" else "..."}",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = TealLight
-                                            )
-                                        }
-                                    }
-                                    DownloadStatus.FAILED -> {
-                                        Text(
-                                        text = "\u26a0️ Download failed",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = ErumiError
-                                        )
-                                    }
-                                    else -> {
-                                        Text(
-                                            text = "Queued",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = TextDim
-                                        )
-                                    }
-                                }
+                                DownloadStatusBadge(
+                                    status = ep.status,
+                                    progress = ep.progress,
+                                    downloadedBytes = ep.downloadedBytes
+                                )
                             }
                         }
 
@@ -405,7 +369,7 @@ fun DownloadedDetailScreen(
                                     modifier = Modifier
                                         .size(36.dp)
                                         .clip(CircleShape)
-                                        .background(TealPrimary)
+                                        .background(ErumiPrimary)
                                         .clickable {
                                             onPlayEpisode(
                                                 group.animeTitle,
@@ -420,7 +384,7 @@ fun DownloadedDetailScreen(
                                     Icon(
                                         imageVector = Icons.Default.PlayArrow,
                                         contentDescription = "Play",
-                                        tint = BgMain,
+                                        tint = ErumiBackground,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -448,7 +412,7 @@ fun DownloadedDetailScreen(
                         onClick = { onViewOnlineDetails(group.animeTitle) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = ErumiSecondaryText),
                         border = ButtonDefaults.outlinedButtonBorder.copy(
                             brush = androidx.compose.ui.graphics.SolidColor(BorderSubtle)
                         )
@@ -476,14 +440,14 @@ fun DownloadedDetailScreen(
             title = {
                 Text(
                     text = "Delete Episode ${ep.episodeNumber}?",
-                    color = TextPrimary,
+                    color = ErumiPrimaryText,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
                     text = "Are you sure you want to remove this downloaded episode from your device storage?",
-                    color = TextSecondary
+                    color = ErumiSecondaryText
                 )
             },
             confirmButton = {
@@ -503,7 +467,7 @@ fun DownloadedDetailScreen(
             },
             dismissButton = {
                 TextButton(onClick = { episodeToDelete = null }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text("Cancel", color = ErumiSecondaryText)
                 }
             },
             containerColor = BgCard
@@ -517,14 +481,14 @@ fun DownloadedDetailScreen(
             title = {
                 Text(
                     text = "Delete All Downloads?",
-                    color = TextPrimary,
+                    color = ErumiPrimaryText,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
                     text = "Are you sure you want to delete all ${group.episodes.size} downloaded episode(s) of \"${group.animeTitle}\"?",
-                    color = TextSecondary
+                    color = ErumiSecondaryText
                 )
             },
             confirmButton = {
@@ -541,7 +505,7 @@ fun DownloadedDetailScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteAllDialog = false }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text("Cancel", color = ErumiSecondaryText)
                 }
             },
             containerColor = BgCard

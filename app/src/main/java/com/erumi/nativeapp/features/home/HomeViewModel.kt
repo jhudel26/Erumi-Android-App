@@ -14,6 +14,7 @@ import com.erumi.nativeapp.domain.model.WatchProgress
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 data class HomeUiState(
     val featuredAnime: Anime? = null,
@@ -24,7 +25,8 @@ data class HomeUiState(
     val selectedGenre: String = "All",
     val isLoading: Boolean = true,
     val isOffline: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isFirstLoad: Boolean = true
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -63,15 +65,20 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         val items = res.data.orEmpty()
                         _uiState.update { current ->
                             val currentSpotlight = current.spotlightAnime
-                            val spotlight = if (currentSpotlight.isEmpty()) {
+                            var spotlight = if (currentSpotlight.isEmpty()) {
                                 items.take(6)
                             } else currentSpotlight
+                            // Shuffle on first load for variety
+                            if (current.isFirstLoad && spotlight.size > 1) {
+                                spotlight = spotlight.shuffled()
+                            }
                             current.copy(
                                 latestReleases = items,
                                 spotlightAnime = spotlight,
                                 featuredAnime = current.featuredAnime ?: items.firstOrNull(),
                                 isLoading = false,
-                                isOffline = false
+                                isOffline = false,
+                                isFirstLoad = false
                             )
                         }
                     }
@@ -101,10 +108,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         val combined = (items.take(6) + current.latestReleases.take(3))
                             .distinctBy { it.title }
                             .take(6)
+                        var spotlight = if (combined.isNotEmpty()) combined else current.spotlightAnime
+                        // Shuffle on first load for variety
+                        if (current.isFirstLoad && spotlight.size > 1) {
+                            spotlight = spotlight.shuffled()
+                        }
                         current.copy(
                             popularAnime = items,
-                            spotlightAnime = if (combined.isNotEmpty()) combined else current.spotlightAnime,
-                            featuredAnime = current.featuredAnime ?: items.firstOrNull()
+                            spotlightAnime = spotlight,
+                            featuredAnime = current.featuredAnime ?: items.firstOrNull(),
+                            isFirstLoad = false
                         )
                     }
                 }

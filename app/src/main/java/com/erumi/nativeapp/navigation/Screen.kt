@@ -3,9 +3,16 @@ package com.erumi.nativeapp.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.erumi.nativeapp.shared.navigation.BaseScreen
 
-sealed class Screen(val route: String, val title: String, val icon: ImageVector? = null) {
+sealed class Screen(
+    override val route: String,
+    override val title: String,
+    override val icon: ImageVector? = null
+) : BaseScreen(route, title, icon) {
+    object ExperienceSelector : Screen("experience_selector", "Select Experience", null)
     object Home : Screen("home", "Home", Icons.Default.Home)
+    object Browse : Screen("browse", "Browse", Icons.Default.Tv)
     object Search : Screen("search", "Search", Icons.Default.Search)
     object Watchlist : Screen("watchlist", "Watchlist", Icons.Default.Bookmark)
     object Downloads : Screen("downloads", "Downloads", Icons.Default.Download)
@@ -45,6 +52,6 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector?
     }
 
     companion object {
-        val bottomNavItems = listOf(Home, Search, Watchlist, Downloads, Settings)
+        val bottomNavItems = listOf(Home, Browse, Watchlist, Downloads, Settings)
     }
 }

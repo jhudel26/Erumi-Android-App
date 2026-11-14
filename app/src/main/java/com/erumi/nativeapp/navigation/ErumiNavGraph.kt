@@ -1,33 +1,41 @@
 package com.erumi.nativeapp.navigation
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.erumi.nativeapp.manga.data.local.ErumiExperience
+import com.erumi.nativeapp.shared.navigation.BaseNavGraph
+import com.erumi.nativeapp.shared.ui.tour.ErumiTourOverlay
+import com.erumi.nativeapp.shared.ui.tour.ErumiTourStep
+import com.erumi.nativeapp.shared.ui.tour.LocalErumiTourState
+import com.erumi.nativeapp.shared.ui.tour.rememberErumiTourState
 import com.erumi.nativeapp.features.anime_details.DetailScreen
 import com.erumi.nativeapp.features.anime_details.DetailViewModel
+import com.erumi.nativeapp.features.browse.BrowseScreen
+import com.erumi.nativeapp.features.browse.BrowseViewModel
 import com.erumi.nativeapp.features.downloads.DownloadedDetailScreen
 import com.erumi.nativeapp.features.downloads.DownloadsScreen
 import com.erumi.nativeapp.features.history.HistoryScreen
@@ -38,76 +46,87 @@ import com.erumi.nativeapp.features.search.SearchScreen
 import com.erumi.nativeapp.features.settings.SettingsScreen
 import com.erumi.nativeapp.features.settings.SettingsViewModel
 import com.erumi.nativeapp.features.watchlist.WatchlistScreen
-import com.erumi.nativeapp.ui.theme.BgCard
-import com.erumi.nativeapp.ui.theme.ErumiBackground
-import com.erumi.nativeapp.ui.theme.ErumiSurface
-import com.erumi.nativeapp.ui.theme.TealPrimary
-import com.erumi.nativeapp.ui.theme.TextSecondary
+
 import android.content.Intent
 
 @Composable
 fun ErumiNavGraph(
-    onRequestBatteryOptimization: (Intent) -> Unit = {}
+    onRequestBatteryOptimization: (Intent) -> Unit = {},
+    onSwitchToManga: () -> Unit = {},
+    startTourOnLaunch: Boolean = false,
+    onTourCompleted: () -> Unit = {}
 ) {
     val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
+    val tourState = rememberErumiTourState(ErumiExperience.ANIME, onCompleted = onTourCompleted)
 
-    val isPlayerScreen = currentRoute?.startsWith("player") == true
-
-    Scaffold(
-        containerColor = ErumiBackground,
-        bottomBar = {
-            AnimatedVisibility(
-                visible = !isPlayerScreen,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                NavigationBar(
-                    containerColor = ErumiSurface,
-                    tonalElevation = 8.dp
-                ) {
-                    Screen.bottomNavItems.forEach { screen ->
-                        val selected = currentRoute == screen.route
-                        NavigationBarItem(
-                            icon = {
-                                screen.icon?.let {
-                                    Icon(
-                                        imageVector = it,
-                                        contentDescription = screen.title
-                                    )
-                                }
-                            },
-                            label = { Text(text = screen.title) },
-                            selected = selected,
-                            onClick = {
-                                if (currentRoute != screen.route) {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = TealPrimary,
-                                selectedTextColor = TealPrimary,
-                                unselectedIconColor = TextSecondary,
-                                unselectedTextColor = TextSecondary,
-                                indicatorColor = BgCard
-                            )
-                        )
-                    }
-                }
-            }
+    LaunchedEffect(startTourOnLaunch) {
+        if (startTourOnLaunch && !tourState.isActive) {
+            tourState.startTour(navController)
         }
-    ) { innerPadding ->
+    }
+
+    CompositionLocalProvider(LocalErumiTourState provides tourState) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            BaseNavGraph(
+                bottomNavItems = Screen.bottomNavItems,
+                navController = navController,
+                hideBottomBarRoutes = listOf("player")
+            ) { innerPadding, _, currentRoute ->
+        val isPlayerScreen = currentRoute?.startsWith("player") == true
+        val bottomNavRoutes = remember { Screen.bottomNavItems.map { it.route }.toSet() }
+
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route,
-            modifier = Modifier.padding(if (isPlayerScreen) PaddingValues(0.dp) else innerPadding)
+            modifier = Modifier.padding(bottom = if (isPlayerScreen) 0.dp else innerPadding.calculateBottomPadding()),
+            enterTransition = {
+                val fromBottomNav = initialState.destination.route in bottomNavRoutes
+                val toBottomNav = targetState.destination.route in bottomNavRoutes
+                if (fromBottomNav && toBottomNav) {
+                    fadeIn(animationSpec = tween(200))
+                } else {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(280, easing = FastOutSlowInEasing)
+                    ) + fadeIn(animationSpec = tween(280))
+                }
+            },
+            exitTransition = {
+                val fromBottomNav = initialState.destination.route in bottomNavRoutes
+                val toBottomNav = targetState.destination.route in bottomNavRoutes
+                if (fromBottomNav && toBottomNav) {
+                    fadeOut(animationSpec = tween(200))
+                } else {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth / 4 },
+                        animationSpec = tween(280, easing = FastOutSlowInEasing)
+                    ) + fadeOut(animationSpec = tween(200))
+                }
+            },
+            popEnterTransition = {
+                val fromBottomNav = initialState.destination.route in bottomNavRoutes
+                val toBottomNav = targetState.destination.route in bottomNavRoutes
+                if (fromBottomNav && toBottomNav) {
+                    fadeIn(animationSpec = tween(200))
+                } else {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> -fullWidth / 4 },
+                        animationSpec = tween(280, easing = FastOutSlowInEasing)
+                    ) + fadeIn(animationSpec = tween(200))
+                }
+            },
+            popExitTransition = {
+                val fromBottomNav = initialState.destination.route in bottomNavRoutes
+                val toBottomNav = targetState.destination.route in bottomNavRoutes
+                if (fromBottomNav && toBottomNav) {
+                    fadeOut(animationSpec = tween(200))
+                } else {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(280, easing = FastOutSlowInEasing)
+                    ) + fadeOut(animationSpec = tween(280))
+                }
+            }
         ) {
             // Home
             composable(Screen.Home.route) {
@@ -123,7 +142,31 @@ fun ErumiNavGraph(
                     },
                     onGoToDownloads = {
                         navController.navigate(Screen.Downloads.route)
+                    },
+                    onSearchClick = {
+                        navController.navigate(Screen.Search.route)
+                    },
+                    onSwitchExperience = onSwitchToManga
+                )
+            }
+
+            // Browse
+            composable(Screen.Browse.route) {
+                val context = LocalContext.current
+                val app = context.applicationContext as android.app.Application
+                val browseViewModel: BrowseViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return BrowseViewModel(app) as T
+                        }
                     }
+                )
+                BrowseScreen(
+                    onAnimeClick = { anime ->
+                        navController.navigate(Screen.Detail.createRoute(anime.title))
+                    },
+                    viewModel = browseViewModel
                 )
             }
 
@@ -207,7 +250,11 @@ fun ErumiNavGraph(
                 )
                 SettingsScreen(
                     viewModel = settingsViewModel,
-                    onRequestBatteryOptimization = onRequestBatteryOptimization
+                    onRequestBatteryOptimization = onRequestBatteryOptimization,
+                    onSwitchToManga = onSwitchToManga,
+                    onReplayTour = {
+                        tourState.startTour(navController)
+                    }
                 )
             }
 
@@ -293,4 +340,14 @@ fun ErumiNavGraph(
             }
         }
     }
+
+    // Spotlight Guided Tour Overlay
+    if (tourState.isActive) {
+        ErumiTourOverlay(
+            tourState = tourState,
+            navController = navController
+        )
+    }
+}
+}
 }

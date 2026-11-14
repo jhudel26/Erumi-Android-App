@@ -1,8 +1,20 @@
-﻿package com.erumi.nativeapp.features.downloads
+package com.erumi.nativeapp.features.downloads
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,11 +23,25 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowForwardIos
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.FileDownloadOff
 import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PauseCircle
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PlayCircle
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,7 +52,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.erumi.nativeapp.core.image.ImageResolver
@@ -34,7 +59,17 @@ import com.erumi.nativeapp.domain.model.Anime
 import com.erumi.nativeapp.domain.model.DownloadStatus
 import com.erumi.nativeapp.ui.components.ErumiImagePlaceholder
 import com.erumi.nativeapp.ui.components.ShimmerLoadingPlaceholder
-import com.erumi.nativeapp.ui.theme.*
+import com.erumi.nativeapp.ui.theme.BgCard
+import com.erumi.nativeapp.ui.theme.BgSurfaceElevated
+import com.erumi.nativeapp.ui.theme.ErumiBackground
+import com.erumi.nativeapp.ui.theme.ErumiError
+import com.erumi.nativeapp.ui.theme.ErumiPrimary
+import com.erumi.nativeapp.ui.theme.ErumiPrimaryText
+import com.erumi.nativeapp.ui.theme.ErumiSecondaryText
+import com.erumi.nativeapp.ui.theme.SuccessGreen
+import com.erumi.nativeapp.ui.theme.TealLight
+import com.erumi.nativeapp.ui.theme.TextDim
+import com.erumi.nativeapp.ui.theme.TextPrimary
 
 @Composable
 fun DownloadsScreen(
@@ -47,23 +82,23 @@ fun DownloadsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BgMain)
+            .background(ErumiBackground)
             .statusBarsPadding()
             .padding(horizontal = 16.dp)
     ) {
-        Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "Offline Downloads",
+            text = "Downloads",
             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-            color = TextPrimary
+            color = ErumiPrimaryText,
+            modifier = Modifier.padding(top = 12.dp)
         )
         Text(
             text = "Tap any downloaded anime to view and play its episodes",
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
+            color = ErumiSecondaryText
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Queue management buttons
         if (state.animeGroups.any { it.isAnyDownloading }) {
@@ -97,16 +132,16 @@ fun DownloadsScreen(
                 Button(
                     onClick = { viewModel.resumeAllDownloads() },
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = ErumiPrimary)
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.PlayCircle,
                         contentDescription = null,
-                        tint = BgMain,
+                        tint = ErumiBackground,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Resume All", color = BgMain)
+                    Text("Resume All", color = ErumiBackground)
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -116,7 +151,7 @@ fun DownloadsScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 90.dp),
+                    .padding(bottom = 80.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -143,7 +178,7 @@ fun DownloadsScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 90.dp),
+                contentPadding = PaddingValues(bottom = 80.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(
@@ -178,7 +213,7 @@ fun DownloadsScreen(
             text = {
                 Text(
                     text = "Are you sure you want to remove all ${group.episodes.size} downloaded episode(s) of \"${group.animeTitle}\" from your device?",
-                    color = TextSecondary
+                    color = ErumiSecondaryText
                 )
             },
             confirmButton = {
@@ -194,7 +229,7 @@ fun DownloadsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { groupToDelete = null }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text("Cancel", color = ErumiSecondaryText)
                 }
             },
             containerColor = BgCard
@@ -229,7 +264,7 @@ fun AnimeDownloadGroupCard(
 
     val sizeMb = group.totalDownloadedBytes / (1024 * 1024)
 
-    // Summarise which episodes are downloaded, e.g. "Ep 1, 2, 3" or "Ep 1-12"
+    // Summarize which episodes are downloaded, e.g. "Ep 1, 2, 3" or "Ep 1-12"
     val epNumbers = group.episodes
         .filter { it.status == DownloadStatus.COMPLETED }
         .map { it.episodeNumber }
@@ -312,7 +347,7 @@ fun AnimeDownloadGroupCard(
                                 .weight(1f)
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp)),
-                            color = TealPrimary,
+                            color = ErumiPrimary,
                             trackColor = BgSurfaceElevated
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -357,7 +392,7 @@ fun AnimeDownloadGroupCard(
                         Icon(
                             imageVector = Icons.Rounded.Pause,
                             contentDescription = "Pause Download",
-                            tint = TealPrimary
+                            tint = ErumiPrimary
                         )
                     }
                 } else if (download.status == DownloadStatus.PAUSED) {
@@ -365,7 +400,7 @@ fun AnimeDownloadGroupCard(
                         Icon(
                             imageVector = Icons.Rounded.PlayArrow,
                             contentDescription = "Resume Download",
-                            tint = TealPrimary
+                            tint = ErumiPrimary
                         )
                     }
                 }

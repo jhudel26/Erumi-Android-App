@@ -1,6 +1,7 @@
 package com.erumi.nativeapp.features.watchlist
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.erumi.nativeapp.domain.model.Anime
-import com.erumi.nativeapp.ui.components.AnimeCard
+import com.erumi.nativeapp.shared.ui.components.MediaEmptyState
+import com.erumi.nativeapp.shared.ui.components.MediaPosterCard
 import com.erumi.nativeapp.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -44,95 +48,85 @@ fun WatchlistScreen(
         }
     }
 
-    Scaffold(
-        containerColor = ErumiBackground,
-        topBar = {
-            TopAppBar(
-                title = {
-                    if (isSearchActive) {
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = { Text("Filter saved anime...", color = ErumiMuted) },
-                            singleLine = true,
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
-                                unfocusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
-                                focusedTextColor = ErumiPrimaryText,
-                                unfocusedTextColor = ErumiPrimaryText,
-                                cursorColor = ErumiPrimary
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    } else {
-                        Text(
-                            text = "My Watchlist",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {
-                        isSearchActive = !isSearchActive
-                        if (!isSearchActive) searchQuery = ""
-                    }) {
-                        Icon(
-                            imageVector = if (isSearchActive) Icons.Default.Close else Icons.Default.Search,
-                            contentDescription = "Search Watchlist",
-                            tint = ErumiPrimaryText
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = ErumiBackground)
-            )
-        }
-    ) { padding ->
-        if (state.watchlist.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.BookmarkBorder,
-                        contentDescription = null,
-                        tint = ErumiMuted,
-                        modifier = Modifier.size(54.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Your Watchlist is empty",
-                        style = MaterialTheme.typography.titleMedium.copy(color = ErumiSecondaryText)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Save anime to keep track of what you want to watch",
-                        style = MaterialTheme.typography.bodySmall.copy(color = ErumiMuted)
-                    )
-                }
-            }
-        } else if (filteredList.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ErumiBackground)
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "No saved anime matches '$searchQuery'",
-                    style = MaterialTheme.typography.bodyMedium.copy(color = ErumiSecondaryText)
+                    text = "My Watchlist",
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                    color = ErumiPrimaryText
+                )
+                Text(
+                    text = "Keep track of anime you want to watch or are watching",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ErumiSecondaryText
                 )
             }
+            IconButton(onClick = {
+                isSearchActive = !isSearchActive
+                if (!isSearchActive) searchQuery = ""
+            }) {
+                Icon(
+                    imageVector = if (isSearchActive) Icons.Default.Close else Icons.Default.Search,
+                    contentDescription = "Search Watchlist",
+                    tint = ErumiPrimaryText
+                )
+            }
+        }
+
+        if (isSearchActive) {
+            Spacer(modifier = Modifier.height(10.dp))
+            TextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Filter saved anime...", color = ErumiMuted) },
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = BgCard,
+                    unfocusedContainerColor = BgCard,
+                    focusedTextColor = ErumiPrimaryText,
+                    unfocusedTextColor = ErumiPrimaryText,
+                    cursorColor = ErumiPrimary,
+                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent
+                ),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (state.watchlist.isEmpty()) {
+            MediaEmptyState(
+                message = "Your Watchlist is empty",
+                subtitle = "Save anime to keep track of what you want to watch",
+                icon = Icons.Default.BookmarkBorder,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else if (filteredList.isEmpty()) {
+            MediaEmptyState(
+                message = "No saved anime matches '$searchQuery'",
+                subtitle = "Try checking for typos or searching another title",
+                modifier = Modifier.fillMaxSize()
+            )
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp)
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(top = 0.dp, bottom = 80.dp)
             ) {
                 item {
                     Text(
@@ -145,7 +139,7 @@ fun WatchlistScreen(
                 items(chunked) { rowAnimes ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         for (anime in rowAnimes) {
                             Box(
@@ -156,7 +150,7 @@ fun WatchlistScreen(
                                         onLongClick = { animeToRemove = anime }
                                     )
                             ) {
-                                AnimeCard(
+                                MediaPosterCard(
                                     anime = anime,
                                     onClick = { onAnimeClick(anime) },
                                     modifier = Modifier.fillMaxWidth()
