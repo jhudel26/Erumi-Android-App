@@ -52,6 +52,13 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+// Migration from version 2 to 3: No-op (schema unchanged)
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        // No schema changes - this is a version bump only
+    }
+}
+
 @Database(
     entities = [
         AnimeEntity::class,
@@ -63,7 +70,7 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         SearchHistoryEntity::class,
         ImageCacheEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(DatabaseConverters::class)
@@ -88,7 +95,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     Constants.DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                 INSTANCE = instance
                 instance

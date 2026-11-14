@@ -18,10 +18,23 @@ object ApiClient {
             .addInterceptor { chain ->
                 val original = chain.request()
                 val url = original.url.toString()
+                val originalRef = original.header("Referer")
                 val customRef = original.header("X-Custom-Referer")
 
+                val mangaReferer = when {
+                    url.contains("2xstorage") || url.contains("manganato") || url.contains("manganelo") ||
+                    url.contains("readmanganato") || url.contains("natomanga") || url.contains("nelomanga") -> "https://www.manganato.gg/"
+                    url.contains("manhuaplus") -> "https://manhuaplus.org/"
+                    url.contains("asura") || url.contains("asuracomic") -> "https://asuracomic.net/"
+                    url.contains("flamecomics") || url.contains("flamescans") -> "https://flamecomics.xyz/"
+                    url.contains("manhuascan") || url.contains("manhuaus") -> "https://manhuascan.io/"
+                    else -> null
+                }
+
                 val resolvedRef = when {
+                    !originalRef.isNullOrBlank() -> originalRef
                     !customRef.isNullOrBlank() -> customRef
+                    mangaReferer != null -> mangaReferer
                     else -> StreamRefererRegistry.getReferer(url)
                 }
 
@@ -38,9 +51,13 @@ object ApiClient {
                     reqBuilder
                         .header("Referer", resolvedRef)
                         .header("Origin", origin)
-                        .header("Sec-Fetch-Dest", "empty")
-                        .header("Sec-Fetch-Mode", "cors")
-                        .header("Sec-Fetch-Site", "cross-site")
+
+                    if (mangaReferer == null) {
+                        reqBuilder
+                            .header("Sec-Fetch-Dest", "empty")
+                            .header("Sec-Fetch-Mode", "cors")
+                            .header("Sec-Fetch-Site", "cross-site")
+                    }
                 }
 
                 var response = chain.proceed(reqBuilder.build())

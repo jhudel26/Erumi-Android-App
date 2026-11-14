@@ -4,6 +4,42 @@ This document contains the release history of **Erumi Native**, including new fe
 
 ---
 
+## Version 1.3.0
+### Manga Support, Multi-Experience Architecture & Platform Enhancements
+
+### New Features
+
+- **Manga/Manhua Experience**: Full manga reading support with multiple sources (MangaDex, AsuraScans, FlameComics, ManhuaPlus, ManhuaScan, Manganato)
+- **Experience Selector**: Choose between Anime and Manga experiences on first launch with persistent preference
+- **Manga Reader**: Horizontal/vertical/webtoon reading modes, LTR/RTL direction, image scaling, fullscreen immersion
+- **Manga Library**: Downloads, history, bookmarks with offline reading support
+- **Manga Discovery**: Browse by genre, status, sort options with pagination
+- **Manga Search**: Multi-source search with fuzzy matching and history
+
+### Architecture Improvements
+
+- **Shared UI Components**: Unified `MediaPosterCard`, `ContinueMediaCard`, `SectionHeader`, `FilterChipRow`, `MediaBottomNavBar`, `MediaSearchBar` across both experiences
+- **Shared Navigation**: `BaseNavGraph` and `BaseScreen` for consistent navigation patterns
+- **Shared Domain Models**: `MediaChapter`, `MediaProgress` interfaces for cross-platform media handling
+- **Experience-Based Routing**: `ErumiExperience` enum (SELECTOR, ANIME, MANGA) with DataStore persistence
+
+### Technical Enhancements
+
+- **Onboarding Tours**: `ErumiTourOverlay` with step-by-step feature highlights for both experiences
+- **Branded Splash Screen**: `ErumiSplashScreen` with animated logo
+- **Offline Home View**: Shared empty state component for offline scenarios
+- **Download Status Badge**: Unified download status indicator component
+- **Experience Tutorial Dialog**: First-run guidance for each experience
+
+### Bug Fixes & Stability
+
+- Improved image loading with centralized `ImageResolver` and Coil configuration
+- Enhanced database operations with new DAOs for manga entities
+- Better error handling in manga source parsers
+- Optimized background download management
+
+---
+
 ## Version 1.2.0
 ### Stability, Performance & User Experience Improvements
 
@@ -176,6 +212,7 @@ No known issues documented for this release.
 
 | Version | Release Date |
 |---|---|
+| 1.3.0 | November 14, 2026 |
 | 1.2.0 | November 10, 2026|
 | 1.1.0 | November 9, 2026 |
 

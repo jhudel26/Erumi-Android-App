@@ -66,7 +66,7 @@ fun ErumiSplashScreen(
             .alpha(alpha.coerceAtLeast(0.01f))
     ) {
         Image(
-            painter = painterResource(R.drawable.splash_brand),
+            painter = painterResource(R.drawable.erumi_splash),
             contentDescription = "ERUMI",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
@@ -109,7 +109,7 @@ fun ErumiSplashScreen(
             Spacer(Modifier.height(4.dp))
             Text(
                 "Anime Streaming",
-                color = TealPrimary,
+                color = ErumiPrimary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.sp
@@ -121,7 +121,7 @@ fun ErumiSplashScreen(
                     .width(120.dp)
                     .height(3.dp)
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(2.dp)),
-                color = TealPrimary,
+                color = ErumiPrimary,
                 trackColor = ErumiPrimaryText.copy(alpha = 0.12f)
             )
             Spacer(Modifier.height(8.dp))

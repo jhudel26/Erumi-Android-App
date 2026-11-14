@@ -56,7 +56,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,15 +73,16 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.erumi.nativeapp.core.image.ImageResolver
 import com.erumi.nativeapp.domain.model.DownloadStatus
+import com.erumi.nativeapp.shared.ui.components.DownloadStatusBadge
+import com.erumi.nativeapp.shared.ui.components.ShimmerLoader
+import com.erumi.nativeapp.shared.ui.components.ShimmerType
 import com.erumi.nativeapp.ui.components.ErrorView
 import com.erumi.nativeapp.ui.components.ErumiImagePlaceholder
-import com.erumi.nativeapp.ui.components.ShimmerLoadingPlaceholder
 import com.erumi.nativeapp.ui.theme.ErumiBackground
 import com.erumi.nativeapp.ui.theme.ErumiBorder
 import com.erumi.nativeapp.ui.theme.ErumiElevatedSurface
 import com.erumi.nativeapp.ui.theme.ErumiError
 import com.erumi.nativeapp.ui.theme.ErumiGold
-import com.erumi.nativeapp.ui.theme.ErumiMuted
 import com.erumi.nativeapp.ui.theme.ErumiPrimary
 import com.erumi.nativeapp.ui.theme.ErumiPrimaryText
 import com.erumi.nativeapp.ui.theme.ErumiSecondary
@@ -175,9 +175,7 @@ fun DetailScreen(
         val anime = state.anime
 
         if (anime == null && state.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = ErumiPrimary)
-            }
+            ShimmerLoader(type = ShimmerType.DETAILS, modifier = Modifier.fillMaxSize())
         } else if (anime == null && state.error != null) {
             ErrorView(message = state.error ?: "Failed to load anime details", onRetry = { viewModel.loadDetails() })
         } else if (anime != null) {
@@ -384,7 +382,7 @@ fun DetailScreen(
                                     }
                                 }
                             }
-                            Spacer(modifier = Modifier.height(14.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
 
                         // Synopsis
@@ -449,7 +447,7 @@ fun DetailScreen(
                                     }
                                 }
                             }
-                            Spacer(modifier = Modifier.height(20.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
 
                         // Episode List Header with Toggle
@@ -476,7 +474,7 @@ fun DetailScreen(
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
 
@@ -606,31 +604,11 @@ fun DetailScreen(
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
-                                    Text(
-                                        text = when (downloadItem?.status) {
-                                            DownloadStatus.COMPLETED -> "Downloaded \u2022 Ready Offline"
-                                            DownloadStatus.DOWNLOADING -> {
-                                                val mb = downloadItem.downloadedBytes / (1024 * 1024)
-                                                if (downloadItem.progress > 0) {
-                                                    "Downloading ${downloadItem.progress}% (${mb} MB)..."
-                                                } else if (mb > 0) {
-                                                    "Downloading ${mb} MB..."
-                                                } else {
-                                                    "Downloading..."
-                                                }
-                                            }
-                                            DownloadStatus.PENDING -> "Download Queued"
-                                            DownloadStatus.FAILED -> "Download Failed (tap retry)"
-                                            else -> "Sub / Dub Available"
-                                        },
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            color = when (downloadItem?.status) {
-                                                DownloadStatus.COMPLETED -> ErumiPrimary
-                                                DownloadStatus.DOWNLOADING, DownloadStatus.PENDING -> ErumiSecondary
-                                                DownloadStatus.FAILED -> ErumiError
-                                                else -> ErumiMuted
-                                            }
-                                        )
+                                    DownloadStatusBadge(
+                                        status = downloadItem?.status,
+                                        progress = downloadItem?.progress ?: 0,
+                                        downloadedBytes = downloadItem?.downloadedBytes ?: 0L,
+                                        fallbackText = "Sub / Dub Available"
                                     )
                                 }
                             }

@@ -8,6 +8,7 @@ import com.erumi.nativeapp.core.image.providers.JikanArtworkProvider
 import com.erumi.nativeapp.core.image.providers.KitsuArtworkProvider
 import com.erumi.nativeapp.domain.model.Anime
 import com.erumi.nativeapp.engine.sources.AniListSource
+import com.erumi.nativeapp.manga.domain.models.Manga
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Collections
@@ -17,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Centralized image resolver for Erumi anime posters and banners.
  * Implements multi-source fallback: AllAnime → AniList → Placeholder
+ * Also supports manga cover images.
  */
 class ImageResolver(private val context: Context) {
 
@@ -386,6 +388,73 @@ class ImageResolver(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "Error clearing cache for animeId $animeId: ${e.message}")
         }
+    }
+
+    // ==================== MANGA SUPPORT ====================
+
+    /**
+     * Resolves the cover/poster URL for a manga using multi-source fallback.
+     * Priority: Cached URL → Provided cover → AniList fallback (if applicable) → Placeholder
+     */
+    suspend fun resolvePosterUrl(manga: Manga): String? = withContext(Dispatchers.IO) {
+        val mangaId = manga.id
+        val title = manga.title
+
+        Log.d(TAG, "Resolving manga cover for: $title (id: $mangaId)")
+
+        // Check if resolution already in progress
+        if (inProgressPoster[mangaId] == true) {
+            Log.d(TAG, "Manga resolution already in progress for: $title")
+            return@withContext null
+        }
+
+        // Mark as in progress
+        inProgressPoster[mangaId] = true
+
+        try {
+            // Check memory cache for ongoing resolution
+            ongoingResolutions[mangaId]?.let { cached ->
+                Log.d(TAG, "Returning in-memory cached manga cover for: $title")
+                return@withContext cached
+            }
+
+            // Check database cache
+            val cachedImage = database.imageCacheDao().getImageCacheById(mangaId)
+            if (cachedImage != null && !isCacheExpired(cachedImage.resolvedAt)) {
+                cachedImage.resolvedPosterUrl?.let { poster ->
+                    Log.d(TAG, "Returning cached manga cover from DB for: $title")
+                    ongoingResolutions[mangaId] = poster
+                    return@withContext poster
+                }
+            }
+
+            // Normalize provided cover
+            val normalizedCover = normalizeImageUrl(manga.coverUrl)
+            Log.d(TAG, "Primary manga cover: ${normalizedCover ?: "null"}")
+
+            if (isValidImageUrl(normalizedCover)) {
+                Log.d(TAG, "Primary manga cover is valid for: $title")
+                cacheImage(mangaId, normalizedCover, null, "manga_source")
+                ongoingResolutions[mangaId] = normalizedCover!!
+                return@withContext normalizedCover
+            }
+
+            Log.d(TAG, "Primary manga cover unavailable or invalid for: $title")
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error resolving manga cover for $title: ${e.message}", e)
+            null
+        } finally {
+            inProgressPoster.remove(mangaId)
+        }
+    }
+
+    /**
+     * Resolves banner URL for manga (not typically available, returns null).
+     * Kept for API compatibility with HeroCarousel.
+     */
+    suspend fun resolveBannerUrl(manga: Manga): String? = withContext(Dispatchers.IO) {
+        null
     }
 
     companion object {
