@@ -12,6 +12,9 @@ import com.erumi.nativeapp.manga.domain.models.MangaSortOption
 import com.erumi.nativeapp.manga.domain.models.MangaSourceInfo
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -48,8 +51,64 @@ class ManganatoSource(
         if (trimmed.isEmpty()) return getPopular(page)
         val formatted = trimmed.replace(Regex("""[^a-zA-Z0-9]+"""), "_")
         val url = "$BASE_URL/search/story/$formatted?page=$page"
-        return fetchMangaList(url)
+        val directResult = fetchMangaList(url)
+        if (directResult is MangaResult.Success) {
+            return directResult
+        }
+        val errMsg = (directResult as? MangaResult.Error)?.message.orEmpty()
+        if (!errMsg.contains("403")) {
+            return directResult
+        }
+        // Manganato's /search/story/ endpoint is gated behind a Cloudflare 403 challenge,
+        // while /manga-list/* remains accessible. Fall back to filtering catalog pages locally.
+        return searchCatalogFallback(trimmed, page)
     }
+
+    private suspend fun searchCatalogFallback(query: String, page: Int): MangaResult<MangaPagedResult> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val tokens = query.lowercase(Locale.US)
+                    .split(Regex("""\s+"""))
+                    .filter { it.isNotBlank() }
+
+                val basePage = ((page - 1).coerceAtLeast(0) * 2) + 1
+                val urls = listOf(
+                    "$BASE_URL/manga-list/hot-manga?page=$basePage",
+                    "$BASE_URL/manga-list/hot-manga?page=${basePage + 1}",
+                    "$BASE_URL/manga-list/latest-manga?page=$basePage",
+                    "$BASE_URL/manga-list/new-manga?page=$basePage"
+                )
+
+                val allItems = coroutineScope {
+                    urls.map { catalogUrl ->
+                        async {
+                            runCatching {
+                                val doc = fetchDocument(catalogUrl)
+                                doc.select(".list-comic-item-wrap, .list-story-item-wrap, .content-genres-item, .itemupdate, .owl-carousel .item, .search-story-item")
+                                    .mapNotNull { elementToManga(it) }
+                            }.getOrDefault(emptyList())
+                        }
+                    }.awaitAll().flatten()
+                }.distinctBy { it.id }
+
+                val matched = if (tokens.isEmpty()) {
+                    allItems
+                } else {
+                    allItems.filter { manga ->
+                        val titleLower = manga.title.lowercase(Locale.US)
+                        tokens.all { token -> titleLower.contains(token) }
+                    }
+                }
+
+                MangaPagedResult(
+                    items = matched,
+                    hasNextPage = page < 5 && allItems.isNotEmpty()
+                )
+            }.fold(
+                onSuccess = { MangaResult.Success(it) },
+                onFailure = { MangaResult.Error(it.message ?: "Failed to search Manganato", it) }
+            )
+        }
 
     override suspend fun getByGenre(genre: String, page: Int): MangaResult<MangaPagedResult> {
         val slug = genre.trim().lowercase(Locale.US).replace(' ', '-')

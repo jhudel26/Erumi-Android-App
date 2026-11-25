@@ -27,7 +27,10 @@ import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.ui.platform.LocalContext
+import com.erumi.nativeapp.core.updater.UpdateManager
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -260,11 +263,19 @@ fun MangaSettingsScreen(
 
             // ABOUT
             item {
+                val context = LocalContext.current
                 SettingsSection(title = "ABOUT ERUMI") {
                     SettingsItem(
                         icon = Icons.Default.Info,
                         title = "App Version",
-                        subtitle = "Erumi v${BuildConfig.VERSION_NAME}"
+                        subtitle = "Erumi v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+                    )
+                    HorizontalDivider(color = ErumiBorder, thickness = 0.5.dp)
+                    SettingsItem(
+                        icon = Icons.Default.SystemUpdate,
+                        title = "Check for Updates",
+                        subtitle = "Check Cloudflare R2 for a newer release",
+                        onClick = { UpdateManager.getInstance(context).checkForUpdates(force = true) }
                     )
                 }
             }

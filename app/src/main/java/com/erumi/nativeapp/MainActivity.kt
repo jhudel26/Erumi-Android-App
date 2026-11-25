@@ -15,8 +15,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.lifecycleScope
 import com.erumi.nativeapp.core.download.DownloadHelper
+import com.erumi.nativeapp.core.updater.UpdateDialogHost
+import com.erumi.nativeapp.core.updater.UpdateManager
 import com.erumi.nativeapp.manga.data.local.ErumiExperience
 import com.erumi.nativeapp.manga.data.local.ExperiencePreferences
 import com.erumi.nativeapp.manga.navigation.MangaNavGraph
@@ -35,6 +40,12 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.StartActivityForResult()
     ) {
         // Result handled - battery optimization may have been granted
+    }
+
+    private val installPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        UpdateManager.getInstance(this).onInstallPermissionSettingsReturned()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,6 +76,22 @@ class MainActivity : ComponentActivity() {
                     var mangaTutorialCompleted by remember { mutableStateOf(false) }
 
                     val experiencePrefs = remember { ExperiencePreferences(this) }
+                    val updateManager = remember { UpdateManager.getInstance(this) }
+                    val updateState by updateManager.uiState.collectAsState()
+                    val lifecycleOwner = LocalLifecycleOwner.current
+
+                    DisposableEffect(lifecycleOwner) {
+                        val observer = LifecycleEventObserver { _, event ->
+                            if (event == Lifecycle.Event.ON_RESUME) {
+                                updateManager.onInstallPermissionSettingsReturned()
+                                updateManager.checkForUpdates(force = false)
+                            }
+                        }
+                        lifecycleOwner.lifecycle.addObserver(observer)
+                        onDispose {
+                            lifecycleOwner.lifecycle.removeObserver(observer)
+                        }
+                    }
 
                     LaunchedEffect(Unit) {
                         keepSystemSplash.set(false)
@@ -164,6 +191,35 @@ class MainActivity : ComponentActivity() {
                                 showExperienceSelector = true
                             }
                         }
+                    }
+
+                    if (!showBrandedSplash) {
+                        UpdateDialogHost(
+                            state = updateState,
+                            onStartDownload = { manifest, isMandatory ->
+                                updateManager.startDownload(manifest, isMandatory)
+                            },
+                            onRemindLater = { manifest ->
+                                updateManager.remindMeLater(manifest)
+                            },
+                            onCancelDownload = {
+                                updateManager.cancelDownload()
+                            },
+                            onInstallApk = { apkFile, manifest, isMandatory ->
+                                updateManager.installVerifiedApk(apkFile, manifest, isMandatory)
+                            },
+                            onOpenInstallSettings = {
+                                installPermissionLauncher.launch(
+                                    updateManager.createInstallPermissionIntent()
+                                )
+                            },
+                            onRetry = {
+                                updateManager.retryLastAction()
+                            },
+                            onDismiss = {
+                                updateManager.dismissDialog()
+                            }
+                        )
                     }
                 }
             }
