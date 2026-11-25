@@ -2,7 +2,7 @@
 
 ## 1. Cloudflare R2 Bucket Structure
 
-Configure a Cloudflare R2 bucket with a public custom HTTPS domain (for example, `https://updates.erumi.app`):
+Configure a Cloudflare R2 bucket with your public HTTPS domain (`https://pub-ea7a053f2308483e90a9d1c4efdcc55c.r2.dev`):
 
 ```text
 android/
@@ -15,7 +15,7 @@ android/
 Set the manifest URL in `gradle.properties` (or pass `-PUPDATE_MANIFEST_URL=...` during release builds):
 
 ```properties
-UPDATE_MANIFEST_URL=https://updates.erumi.app/android/update.json
+UPDATE_MANIFEST_URL=https://pub-ea7a053f2308483e90a9d1c4efdcc55c.r2.dev/android/update.json
 UPDATE_PUBLIC_KEY=<OPTIONAL_BASE64_X509_ECDSA_P256_PUBLIC_KEY>
 ```
 
@@ -25,7 +25,7 @@ UPDATE_PUBLIC_KEY=<OPTIONAL_BASE64_X509_ECDSA_P256_PUBLIC_KEY>
 {
   "versionCode": 6,
   "versionName": "1.4.0",
-  "apkUrl": "https://updates.erumi.app/android/releases/erumi-v1.4.0.apk",
+  "apkUrl": "https://pub-ea7a053f2308483e90a9d1c4efdcc55c.r2.dev/android/releases/erumi-v1.4.0.apk",
   "sha256": "REPLACE_WITH_ACTUAL_64_CHAR_HEX_SHA256",
   "mandatory": false,
   "minimumSupportedVersion": 5,
@@ -56,4 +56,4 @@ UPDATE_PUBLIC_KEY=<OPTIONAL_BASE64_X509_ECDSA_P256_PUBLIC_KEY>
 3. Compute the exact SHA-256 of the signed release APK.
 4. Upload the APK to `android/releases/erumi-v<versionName>.apk` in Cloudflare R2 (never overwrite older releases so rollback remains possible).
 5. Update `android/update.json` with the new `versionCode`, `versionName`, `apkUrl`, `sha256`, `fileSizeBytes`, `releaseNotes`, and `publishedAt` (and `signature` if `UPDATE_PUBLIC_KEY` is configured).
-6. Verify `https://updates.erumi.app/android/update.json` returns HTTP 200 and valid JSON, then test updating from an older installed APK.
+6. Verify `https://pub-ea7a053f2308483e90a9d1c4efdcc55c.r2.dev/android/update.json` returns HTTP 200 and valid JSON, then test updating from an older installed APK.
