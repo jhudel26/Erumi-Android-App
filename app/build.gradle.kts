@@ -19,6 +19,14 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // Centralized Cloudflare R2 updater configuration (override via gradle.properties or CI)
+        val updateManifestUrl = (project.findProperty("UPDATE_MANIFEST_URL") as String?)
+            ?: "https://updates.erumi.app/android/update.json"
+        val updatePublicKey = (project.findProperty("UPDATE_PUBLIC_KEY") as String?)
+            ?: ""
+        buildConfigField("String", "UPDATE_MANIFEST_URL", "\"$updateManifestUrl\"")
+        buildConfigField("String", "UPDATE_PUBLIC_KEY", "\"$updatePublicKey\"")
     }
 
     buildTypes {
