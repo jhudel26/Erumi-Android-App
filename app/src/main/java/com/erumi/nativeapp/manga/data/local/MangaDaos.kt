@@ -32,6 +32,9 @@ interface MangaChapterDao {
     @Query("SELECT * FROM manga_chapters WHERE id = :id LIMIT 1")
     suspend fun getById(id: String): MangaChapterEntity?
 
+    @Query("SELECT * FROM manga_chapters WHERE url = :url LIMIT 1")
+    suspend fun getByUrl(url: String): MangaChapterEntity?
+
     @Query("UPDATE manga_chapters SET isRead = 1 WHERE id = :chapterId")
     suspend fun markRead(chapterId: String)
 }

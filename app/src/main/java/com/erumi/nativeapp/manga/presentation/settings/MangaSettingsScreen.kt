@@ -90,7 +90,11 @@ class MangaSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     val readerSettings = prefs.readerSettings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MangaReaderSettings())
     val downloadSettings = prefs.downloadSettings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MangaDownloadSettings())
-    val activeSource = prefs.activeSourceId.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "manhuaplus")
+    val activeSource = prefs.activeSourceId.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+        com.erumi.nativeapp.manga.data.sources.MangaSourceManager.AUTO_SOURCE_ID
+    )
     val sources = repo.listSources()
 
     fun updateReader(settings: MangaReaderSettings) = viewModelScope.launch { prefs.updateReaderSettings(settings) }
@@ -201,11 +205,19 @@ fun MangaSettingsScreen(
                     title = "SOURCE",
                     modifier = Modifier.tourHighlight(TourTargetKey.MANGA_SETTINGS_SOURCE)
                 ) {
+                    val autoId = com.erumi.nativeapp.manga.data.sources.MangaSourceManager.AUTO_SOURCE_ID
+                    SettingsItem(
+                        icon = Icons.AutoMirrored.Filled.MenuBook,
+                        title = "Auto (Best Source)",
+                        subtitle = if (activeSource == autoId) "Active • Unified multi-source engine" else "Unified multi-source engine",
+                        onClick = { viewModel.setSource(autoId) }
+                    )
+                    HorizontalDivider(color = ErumiBorder, thickness = 0.5.dp)
                     viewModel.sources.forEach { source ->
                         SettingsItem(
                             icon = Icons.AutoMirrored.Filled.MenuBook,
                             title = source.name,
-                            subtitle = if (source.id == activeSource) "Active" else "Available",
+                            subtitle = if (source.id == activeSource) "Active (Pinned)" else "Available",
                             onClick = { viewModel.setSource(source.id) }
                         )
                         if (source != viewModel.sources.last()) {

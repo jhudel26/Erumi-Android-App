@@ -28,6 +28,7 @@ object ApiClient {
                     url.contains("asura") || url.contains("asuracomic") -> "https://asuracomic.net/"
                     url.contains("flamecomics") || url.contains("flamescans") -> "https://flamecomics.xyz/"
                     url.contains("manhuascan") || url.contains("manhuaus") -> "https://manhuascan.io/"
+                    url.contains("elftoon") -> "https://elftoon.net/"
                     else -> null
                 }
 

@@ -1,6 +1,7 @@
 package com.erumi.nativeapp.manga.data.repository
 
 import android.content.Context
+import com.erumi.nativeapp.core.utils.FuzzyMatcher
 import com.erumi.nativeapp.manga.data.local.MangaChapterEntity
 import com.erumi.nativeapp.manga.data.local.MangaDatabase
 import com.erumi.nativeapp.manga.data.local.MangaEntity
@@ -9,6 +10,7 @@ import com.erumi.nativeapp.manga.data.local.MangaLibraryEntity
 import com.erumi.nativeapp.manga.data.local.MangaPreferencesDataStore
 import com.erumi.nativeapp.manga.data.local.MangaReadingProgressEntity
 import com.erumi.nativeapp.manga.data.local.MangaSearchHistoryEntity
+import com.erumi.nativeapp.manga.data.sources.MangaSource
 import com.erumi.nativeapp.manga.data.sources.MangaSourceManager
 import com.erumi.nativeapp.manga.domain.models.Manga
 import com.erumi.nativeapp.manga.domain.models.MangaChapter
@@ -23,9 +25,13 @@ import com.erumi.nativeapp.manga.domain.models.MangaPublicationStatus
 import com.erumi.nativeapp.manga.domain.models.MangaReadingProgress
 import com.erumi.nativeapp.manga.domain.models.MangaResult
 import com.erumi.nativeapp.manga.domain.models.MangaSortOption
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withTimeoutOrNull
 
 class MangaRepository(
     context: Context,
@@ -45,8 +51,13 @@ class MangaRepository(
 
     fun listSources() = sourceManager.getAll()
 
+    private suspend fun isAutoMode(): Boolean =
+        activeSourceId() == MangaSourceManager.AUTO_SOURCE_ID
+
     private suspend fun source() = sourceManager.require(activeSourceId()).also {
-        sourceManager.setActive(it.info.id)
+        if (activeSourceId() != MangaSourceManager.AUTO_SOURCE_ID) {
+            sourceManager.setActive(it.info.id)
+        }
     }
 
     private suspend fun sourceForUrl(url: String) =
@@ -55,15 +66,31 @@ class MangaRepository(
     private suspend fun sourceForManga(mangaId: String, mangaUrl: String) =
         sourceManager.findSourceForMangaId(mangaId) ?: sourceManager.findSourceForUrl(mangaUrl) ?: source()
 
-    suspend fun getPopular(page: Int) = source().getPopular(page).alsoCacheList()
-    suspend fun getLatest(page: Int) = source().getLatest(page).alsoCacheList()
+    suspend fun getPopular(page: Int): MangaResult<MangaPagedResult> =
+        if (isAutoMode()) {
+            aggregateSources { it.getPopular(page) }.alsoCacheList()
+        } else {
+            source().getPopular(page).alsoCacheList()
+        }
+
+    suspend fun getLatest(page: Int): MangaResult<MangaPagedResult> =
+        if (isAutoMode()) {
+            aggregateSources { it.getLatest(page) }.alsoCacheList()
+        } else {
+            source().getLatest(page).alsoCacheList()
+        }
+
     suspend fun search(query: String, page: Int): MangaResult<MangaPagedResult> {
         if (query.isNotBlank()) {
             db.searchHistoryDao().upsert(
                 MangaSearchHistoryEntity(query.trim(), System.currentTimeMillis())
             )
         }
-        return source().search(query, page).alsoCacheList()
+        return if (isAutoMode()) {
+            aggregateSources(searchQuery = query) { it.search(query, page) }.alsoCacheList()
+        } else {
+            source().search(query, page).alsoCacheList()
+        }
     }
 
     suspend fun browse(
@@ -71,9 +98,22 @@ class MangaRepository(
         sort: MangaSortOption,
         genre: String? = null,
         status: String? = null
-    ) = source().browse(page, sort, genre, status).alsoCacheList()
+    ): MangaResult<MangaPagedResult> =
+        if (isAutoMode()) {
+            aggregateSources { it.browse(page, sort, genre, status) }.alsoCacheList()
+        } else {
+            source().browse(page, sort, genre, status).alsoCacheList()
+        }
 
-    suspend fun getGenres(): List<String> = source().supportedGenres()
+    suspend fun getGenres(): List<String> =
+        if (isAutoMode()) {
+            sourceManager.getAllSources()
+                .flatMap { it.supportedGenres() }
+                .distinct()
+                .sorted()
+        } else {
+            source().supportedGenres()
+        }
 
     suspend fun getDetails(mangaUrl: String): MangaResult<MangaDetails> {
         val cachedById = if (!mangaUrl.startsWith("http", ignoreCase = true)) {
@@ -114,7 +154,22 @@ class MangaRepository(
             list.filter { it.status == "COMPLETED" }.map { it.chapterId }.toSet()
         }.first()
 
-        return when (val result = targetSource.getChapters(resolvedUrl)) {
+        val primaryResult = targetSource.getChapters(resolvedUrl)
+        val effectiveResult = if (
+            (primaryResult is MangaResult.Error || (primaryResult is MangaResult.Success && primaryResult.data.isEmpty())) &&
+            isAutoMode()
+        ) {
+            val mangaTitle = db.mangaDao().getById(mangaId)?.title
+            if (!mangaTitle.isNullOrBlank()) {
+                findFallbackChapters(mangaTitle, excludeSourceId = targetSource.info.id) ?: primaryResult
+            } else {
+                primaryResult
+            }
+        } else {
+            primaryResult
+        }
+
+        return when (val result = effectiveResult) {
             is MangaResult.Success -> {
                 val chapters = result.data.map { chapter ->
                     val local = db.chapterDao().getById(chapter.id)
@@ -181,7 +236,172 @@ class MangaRepository(
             }
         }
         // Fallback to network
-        return sourceForUrl(chapterUrl).getChapterPages(chapterUrl)
+        val primarySource = sourceForUrl(chapterUrl)
+        val primaryPages = primarySource.getChapterPages(chapterUrl)
+        if (primaryPages is MangaResult.Success && primaryPages.data.isNotEmpty()) {
+            return primaryPages
+        }
+
+        if (isAutoMode()) {
+            val fallbackPages = findFallbackPages(chapterUrl, excludeSourceId = primarySource.info.id)
+            if (fallbackPages != null) return fallbackPages
+        }
+        return primaryPages
+    }
+
+    private suspend fun aggregateSources(
+        searchQuery: String? = null,
+        fetch: suspend (MangaSource) -> MangaResult<MangaPagedResult>
+    ): MangaResult<MangaPagedResult> = coroutineScope {
+        val sources = sourceManager.getAllSources()
+        val results = sources.map { src ->
+            async {
+                val res = withTimeoutOrNull(9_000L) { fetch(src) }
+                src to res
+            }
+        }.awaitAll()
+
+        val successes = results.mapNotNull { (src, res) ->
+            (res as? MangaResult.Success)?.let { src to it.data }
+        }
+        if (successes.isEmpty()) {
+            val firstError = results.firstNotNullOfOrNull { (_, res) -> (res as? MangaResult.Error)?.message }
+            return@coroutineScope MangaResult.Error(firstError ?: "All manga sources failed to load")
+        }
+
+        val hasNextPage = successes.any { it.second.hasNextPage }
+        val merged = mergeAndRankCatalog(successes.map { it.first to it.second.items }, searchQuery)
+        MangaResult.Success(MangaPagedResult(items = merged, hasNextPage = hasNextPage))
+    }
+
+    private fun mergeAndRankCatalog(
+        perSourceItems: List<Pair<MangaSource, List<Manga>>>,
+        searchQuery: String? = null
+    ): List<Manga> {
+        data class Cluster(
+            val normalizedKey: String,
+            var best: Manga,
+            var bestScore: Double,
+            var bestRank: Int
+        )
+
+        val clusters = mutableListOf<Cluster>()
+        val keyToIndex = HashMap<String, Int>()
+
+        perSourceItems.forEach { (_, items) ->
+            items.forEachIndexed { index, manga ->
+                val norm = FuzzyMatcher.cleanForSearch(manga.title)
+                if (norm.isBlank()) return@forEachIndexed
+
+                val candidateScore = scoreMangaCandidate(manga, index, searchQuery)
+                val existingIdx = keyToIndex[norm] ?: clusters.indexOfFirst { cluster ->
+                    FuzzyMatcher.titleSimilarity(cluster.normalizedKey, norm) >= 0.88
+                }.takeIf { it >= 0 }
+
+                if (existingIdx == null) {
+                    keyToIndex[norm] = clusters.size
+                    clusters.add(Cluster(norm, manga, candidateScore, index))
+                } else {
+                    val cluster = clusters[existingIdx]
+                    if (candidateScore > cluster.bestScore) {
+                        cluster.best = manga
+                        cluster.bestScore = candidateScore
+                    }
+                    if (index < cluster.bestRank) {
+                        cluster.bestRank = index
+                    }
+                }
+            }
+        }
+
+        return clusters
+            .sortedWith(
+                compareBy<Cluster> {
+                    if (!searchQuery.isNullOrBlank()) -(FuzzyMatcher.titleSimilarity(searchQuery, it.best.title) * 100.0)
+                    else it.bestRank.toDouble()
+                }.thenByDescending { it.bestScore }
+            )
+            .map { it.best }
+    }
+
+    private fun scoreMangaCandidate(manga: Manga, rankIndex: Int, searchQuery: String?): Double {
+        var score = sourceManager.sourcePriority(manga.sourceId) * 10.0
+        if (!manga.coverUrl.isNullOrBlank()) score += 40.0
+        val latestNum = manga.latestChapter?.let {
+            Regex("""([0-9]+(?:\.[0-9]+)?)""").find(it)?.groupValues?.getOrNull(1)?.toFloatOrNull()
+        } ?: 0f
+        score += (latestNum.coerceAtMost(500f) * 0.05)
+        score -= (rankIndex * 0.25)
+        if (!searchQuery.isNullOrBlank()) {
+            score += FuzzyMatcher.titleSimilarity(searchQuery, manga.title) * 100.0
+        }
+        return score
+    }
+
+    private suspend fun findFallbackChapters(
+        mangaTitle: String,
+        excludeSourceId: String
+    ): MangaResult<List<MangaChapter>>? = coroutineScope {
+        val candidates = sourceManager.getAllSources()
+            .filter { it.info.id != excludeSourceId }
+            .sortedByDescending { sourceManager.sourcePriority(it.info.id) }
+
+        val matches = candidates.map { src ->
+            async {
+                val res = withTimeoutOrNull(7_000L) { src.search(mangaTitle, 1) } as? MangaResult.Success
+                val best = res?.data?.items
+                    ?.filter { FuzzyMatcher.isValidTitleMatch(mangaTitle, it.title) }
+                    ?.maxByOrNull { FuzzyMatcher.titleSimilarity(mangaTitle, it.title) }
+                if (best != null && FuzzyMatcher.titleSimilarity(mangaTitle, best.title) >= 0.70) {
+                    src to best
+                } else null
+            }
+        }.awaitAll().filterNotNull()
+
+        for ((src, match) in matches) {
+            val chRes = withTimeoutOrNull(7_000L) { src.getChapters(match.url) }
+            if (chRes is MangaResult.Success && chRes.data.isNotEmpty()) {
+                return@coroutineScope chRes
+            }
+        }
+        null
+    }
+
+    private suspend fun findFallbackPages(
+        chapterUrl: String,
+        excludeSourceId: String
+    ): MangaResult<List<MangaPage>>? = coroutineScope {
+        val chapterEntity = db.chapterDao().getByUrl(chapterUrl) ?: return@coroutineScope null
+        val mangaEntity = db.mangaDao().getById(chapterEntity.mangaId) ?: return@coroutineScope null
+
+        val candidates = sourceManager.getAllSources()
+            .filter { it.info.id != excludeSourceId }
+            .sortedByDescending { sourceManager.sourcePriority(it.info.id) }
+
+        val matches = candidates.map { src ->
+            async {
+                val res = withTimeoutOrNull(7_000L) { src.search(mangaEntity.title, 1) } as? MangaResult.Success
+                val best = res?.data?.items
+                    ?.filter { FuzzyMatcher.isValidTitleMatch(mangaEntity.title, it.title) }
+                    ?.maxByOrNull { FuzzyMatcher.titleSimilarity(mangaEntity.title, it.title) }
+                if (best != null && FuzzyMatcher.titleSimilarity(mangaEntity.title, best.title) >= 0.70) {
+                    src to best
+                } else null
+            }
+        }.awaitAll().filterNotNull()
+
+        for ((src, match) in matches) {
+            val chRes = withTimeoutOrNull(7_000L) { src.getChapters(match.url) } as? MangaResult.Success ?: continue
+            val matchingChapter = chRes.data.firstOrNull { ch ->
+                (chapterEntity.number != null && ch.number != null && ch.number == chapterEntity.number) ||
+                    ch.name.equals(chapterEntity.name, ignoreCase = true)
+            } ?: continue
+            val pagesRes = withTimeoutOrNull(8_000L) { src.getChapterPages(matchingChapter.url) }
+            if (pagesRes is MangaResult.Success && pagesRes.data.isNotEmpty()) {
+                return@coroutineScope pagesRes
+            }
+        }
+        null
     }
 
     fun observeContinueReading(): Flow<List<MangaReadingProgress>> =

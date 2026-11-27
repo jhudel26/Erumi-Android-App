@@ -379,7 +379,11 @@ fun MangaReaderScreen(
                     enabled = prev != null
                 ) {
                     Icon(Icons.AutoMirrored.Filled.NavigateBefore, contentDescription = null, tint = if (prev != null) ErumiPrimaryText else ErumiSecondaryText)
-                    Text("Prev", color = if (prev != null) ErumiPrimaryText else ErumiSecondaryText)
+                    Text(
+                        text = formatChapterButtonLabel(prev, "Prev"),
+                        color = if (prev != null) ErumiPrimaryText else ErumiSecondaryText,
+                        maxLines = 1
+                    )
                 }
                 val next = viewModel.adjacentChapter(true)
                 if (next != null) {
@@ -396,7 +400,11 @@ fun MangaReaderScreen(
                             )
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = ErumiPrimary)
-                    ) { Text("Next Chapter") }
+                    ) {
+                        Text(formatChapterButtonLabel(next, "Next"), maxLines = 1)
+                        Spacer(Modifier.width(4.dp))
+                        Icon(Icons.AutoMirrored.Filled.NavigateNext, contentDescription = null)
+                    }
                 } else {
                     Text("No next chapter", color = ErumiSecondaryText, fontSize = 12.sp)
                 }
@@ -411,6 +419,17 @@ fun MangaReaderScreen(
                 modifier = Modifier.align(Alignment.Center)
             )
         }
+    }
+}
+
+private fun formatChapterButtonLabel(chapter: MangaChapter?, fallback: String): String {
+    if (chapter == null) return fallback
+    val num = chapter.number
+    return if (num != null) {
+        val formatted = if (num % 1f == 0f) num.toInt().toString() else num.toString()
+        "Chapter $formatted"
+    } else {
+        chapter.name.ifBlank { fallback }
     }
 }
 
@@ -466,7 +485,7 @@ private fun VerticalReader(
                             onClick = { onOpenAdjacentChapter(prev) }
                         ) {
                             Icon(Icons.AutoMirrored.Filled.NavigateBefore, contentDescription = null, tint = ErumiPrimaryText)
-                            Text("Prev Chapter", color = ErumiPrimaryText)
+                            Text(formatChapterButtonLabel(prev, "Prev"), color = ErumiPrimaryText, maxLines = 1)
                         }
                     } else {
                         Spacer(Modifier.width(1.dp))
@@ -478,7 +497,7 @@ private fun VerticalReader(
                             onClick = { onOpenAdjacentChapter(next) },
                             colors = ButtonDefaults.buttonColors(containerColor = ErumiPrimary)
                         ) {
-                            Text("Next Chapter")
+                            Text(formatChapterButtonLabel(next, "Next"), maxLines = 1)
                             Spacer(Modifier.width(4.dp))
                             Icon(Icons.AutoMirrored.Filled.NavigateNext, contentDescription = null)
                         }

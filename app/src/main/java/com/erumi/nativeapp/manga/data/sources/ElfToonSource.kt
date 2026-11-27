@@ -90,7 +90,14 @@ class ElfToonSource(
                     ?.substringBefore(" | Elf Toon")?.trim()
                 ?: error("Title unavailable for $absolute")
 
-            val cover = doc.selectFirst("img[src*=/uploads/series/], img[srcset*=/uploads/series/]")?.imgAttr()
+            val slug = absolute.substringAfter("/series/comic/").substringBefore('/').substringBefore('?')
+            val coverCandidates = doc.select("img")
+                .asSequence()
+                .map { it.imgAttr() }
+                .filter { it.contains("/uploads/series/") && !it.contains("logo") }
+                .toList()
+            val cover = coverCandidates.firstOrNull { slug.isNotBlank() && it.contains("/$slug/") }
+                ?: coverCandidates.firstOrNull()
                 ?: doc.selectFirst("meta[property=og:image]")?.attr("abs:content")
                     ?.let { decodeNextImageUrl(it) }
 
@@ -148,9 +155,9 @@ class ElfToonSource(
             val absolute = absolutize(chapterUrl)
             val (doc, body) = fetchDocumentWithRaw(absolute)
 
-            // 1. Extract all /uploads/series/.../p-... page image paths from HTML + Next.js RSC payload
+            // 1. Extract all /uploads/series/.../p<num>-... page image paths from HTML + Next.js RSC payload
             val pageRegex = Regex(
-                """(/uploads/series/[^"'\\<>\s]+/p-[^"'\\<>\s]+\.(?:webp|jpg|jpeg|png|avif))""",
+                """(/uploads/series/[^"'\\<>\s]+/p[0-9]*-[^"'\\<>\s]+\.(?:webp|jpg|jpeg|png|avif))""",
                 RegexOption.IGNORE_CASE
             )
             val rscPages = pageRegex.findAll(body)
