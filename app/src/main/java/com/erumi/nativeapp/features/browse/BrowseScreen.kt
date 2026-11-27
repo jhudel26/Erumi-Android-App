@@ -116,7 +116,8 @@ fun BrowseScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(state.animeList, key = { it.title }) { anime ->
+                        val uniqueAnime = state.animeList.distinctBy { it.id.ifBlank { it.title } }
+                        items(uniqueAnime, key = { it.id.ifBlank { it.title } }) { anime ->
                             MediaPosterCard(
                                 anime = anime,
                                 onClick = { onAnimeClick(anime) }

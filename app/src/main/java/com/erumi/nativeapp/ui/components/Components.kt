@@ -31,6 +31,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -120,8 +121,8 @@ fun HeroCarousel(
     val coroutineScope = rememberCoroutineScope()
 
     // Resolve images for spotlight anime
-    val resolvedImages = remember { mutableMapOf<String, String?>() }
-    val loadingStates = remember { mutableMapOf<String, Boolean>() }
+    val resolvedImages = remember { mutableStateMapOf<String, String?>() }
+    val loadingStates = remember { mutableStateMapOf<String, Boolean>() }
     LaunchedEffect(spotlightAnime) {
         spotlightAnime.forEach { anime ->
             loadingStates[anime.id] = true

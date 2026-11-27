@@ -256,7 +256,7 @@ class EpisodeResolver(
 
         // Add cleaned romaji (remove brackets)
         metadata.romajiName?.let { romaji ->
-            val cleaned = romaji.replace("[", " ").replace("]", " ").replace("ã€", " ").replace("ã€‘", " ")
+            val cleaned = romaji.replace("[", " ").replace("]", " ").replace("【", " ").replace("】", " ")
                 .replace(Regex("""\s+"""), " ").trim()
             if (cleaned.isNotEmpty() && cleaned != romaji) {
                 candidates.add(cleaned)
@@ -306,7 +306,7 @@ class EpisodeResolver(
             }
             // Also try a version with brackets cleaned (for titles like [Revo Barai])
             match.romajiName?.let { romaji ->
-                val cleaned = romaji.replace("[", " ").replace("]", " ").replace("ã€", " ").replace("ã€‘", " ")
+                val cleaned = romaji.replace("[", " ").replace("]", " ").replace("【", " ").replace("】", " ")
                     .replace(Regex("""\s+"""), " ").trim()
                 if (cleaned.isNotEmpty() && cleaned != romaji) {
                     add(cleaned)

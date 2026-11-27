@@ -44,6 +44,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
@@ -232,8 +233,8 @@ fun MangaHeroCarousel(
     val coroutineScope = rememberCoroutineScope()
 
     // Resolve images for spotlight manga
-    val resolvedImages = remember { mutableMapOf<String, String?>() }
-    val loadingStates = remember { mutableMapOf<String, Boolean>() }
+    val resolvedImages = remember { mutableStateMapOf<String, String?>() }
+    val loadingStates = remember { mutableStateMapOf<String, Boolean>() }
     LaunchedEffect(spotlightManga) {
         spotlightManga.forEach { manga ->
             loadingStates[manga.id] = true

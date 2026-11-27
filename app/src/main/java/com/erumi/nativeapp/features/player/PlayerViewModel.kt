@@ -306,6 +306,7 @@ class PlayerViewModel(
     }
 
     private fun loadEpisodesAndStream(episodeNumber: Int) {
+        hasSkippedIntroForEpisode = false
         viewModelScope.launch {
             _uiState.update { it.copy(isBuffering = true, error = null, currentEpisodeNumber = episodeNumber) }
 
@@ -367,21 +368,21 @@ class PlayerViewModel(
             _uiState.update { current ->
                 val currentSelectedId = current.selectedSubtitleId
                 val currentSelectedLang = current.selectedSubtitleLang
+                val resolvedSelectedId = if (currentSelectedLang.equals("off", ignoreCase = true)) {
+                    "off"
+                } else if (currentSelectedId != "off" && stream.subtitles.any { sub -> sub.id == currentSelectedId }) {
+                    currentSelectedId
+                } else {
+                    val langMatch = stream.subtitles.firstOrNull { it.language.equals(currentSelectedLang, ignoreCase = true) }
+                    langMatch?.id ?: stream.subtitles.firstOrNull()?.id ?: "off"
+                }
                 current.copy(
                     currentStream = stream,
                     // Reset subtitle list to what the new stream provides - onTracksChanged will append embedded ones
-                    // Mark the subtitle matching the selected ID as selected, or select the first one if no match
                     availableSubtitles = stream.subtitles.map { sub ->
-                        sub.copy(isSelected = sub.id == currentSelectedId)
+                        sub.copy(isSelected = sub.id == resolvedSelectedId)
                     },
-                    // Update selectedSubtitleId to match an actual subtitle if the current one doesn't exist
-                    selectedSubtitleId = if (currentSelectedId != "off" && stream.subtitles.any { sub -> sub.id == currentSelectedId }) {
-                        currentSelectedId
-                    } else {
-                        // Try to match by language first, otherwise use first subtitle or off
-                        val langMatch = stream.subtitles.firstOrNull { it.language.equals(currentSelectedLang, ignoreCase = true) }
-                        langMatch?.id ?: stream.subtitles.firstOrNull()?.id ?: "off"
-                    },
+                    selectedSubtitleId = resolvedSelectedId,
                     selectedAudio = stream.audio
                 )
             }
@@ -634,6 +635,7 @@ class PlayerViewModel(
 
     fun skipIntro() {
         val player = exoPlayer ?: return
+        hasSkippedIntroForEpisode = true
         val skipDurationMs = (userSettings.skipIntroSeconds * 1000L).coerceIn(10_000L, 180_000L)
         player.seekTo(player.currentPosition + skipDurationMs)
     }

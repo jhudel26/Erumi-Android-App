@@ -1044,13 +1044,18 @@ fun PlayerScreen(
             )
         }
 
-        // Lock indicator - shown briefly when lock state changes or user taps while locked
+        // Lock indicator - shown briefly when lock state changes or user taps while locked; tap to unlock
         if (isLocked && showLockIndicator) {
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Color.Black.copy(alpha = 0.7f))
+                    .background(Color.Black.copy(alpha = 0.75f))
+                    .clickable {
+                        isLocked = false
+                        showLockIndicator = false
+                        isControlsVisible = true
+                    }
                     .padding(horizontal = 24.dp, vertical = 12.dp)
             ) {
                 Row(
@@ -1058,12 +1063,12 @@ fun PlayerScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = null,
+                        imageVector = Icons.Default.LockOpen,
+                        contentDescription = "Unlock",
                         tint = ErumiPrimary
                     )
                     Text(
-                        text = "Screen Locked",
+                        text = "Screen Locked • Tap to Unlock",
                         color = Color.White,
                         style = MaterialTheme.typography.bodyMedium
                     )

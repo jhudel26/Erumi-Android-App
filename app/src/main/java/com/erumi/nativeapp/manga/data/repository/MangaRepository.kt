@@ -76,15 +76,24 @@ class MangaRepository(
     suspend fun getGenres(): List<String> = source().supportedGenres()
 
     suspend fun getDetails(mangaUrl: String): MangaResult<MangaDetails> {
-        val targetSource = sourceForUrl(mangaUrl)
-        return when (val result = targetSource.getDetails(mangaUrl)) {
+        val cachedById = if (!mangaUrl.startsWith("http", ignoreCase = true)) {
+            db.mangaDao().getById(mangaUrl)
+        } else null
+        val resolvedUrl = cachedById?.url ?: mangaUrl
+        val targetSource = if (cachedById != null) {
+            sourceForManga(cachedById.id, resolvedUrl)
+        } else {
+            sourceForUrl(resolvedUrl)
+        }
+        return when (val result = targetSource.getDetails(resolvedUrl)) {
             is MangaResult.Success -> {
                 cacheDetails(result.data)
                 result
             }
             is MangaResult.Error -> {
-                val local = db.mangaDao().getById(mangaUrl)
-                    ?: db.mangaDao().getByUrl(targetSource.info.id, mangaUrl)
+                val local = cachedById
+                    ?: db.mangaDao().getById(mangaUrl)
+                    ?: db.mangaDao().getByUrl(targetSource.info.id, resolvedUrl)
                 if (local != null) {
                     MangaResult.Success(local.toDomainDetails())
                 } else {
@@ -95,12 +104,17 @@ class MangaRepository(
     }
 
     suspend fun getChapters(mangaUrl: String, mangaId: String): MangaResult<List<MangaChapter>> {
-        val targetSource = sourceForManga(mangaId, mangaUrl)
+        val resolvedUrl = if (!mangaUrl.startsWith("http", ignoreCase = true)) {
+            db.mangaDao().getById(mangaId)?.url ?: mangaUrl
+        } else {
+            mangaUrl
+        }
+        val targetSource = sourceForManga(mangaId, resolvedUrl)
         val downloaded = db.downloadDao().observeAll().map { list ->
             list.filter { it.status == "COMPLETED" }.map { it.chapterId }.toSet()
         }.first()
 
-        return when (val result = targetSource.getChapters(mangaUrl)) {
+        return when (val result = targetSource.getChapters(resolvedUrl)) {
             is MangaResult.Success -> {
                 val chapters = result.data.map { chapter ->
                     val local = db.chapterDao().getById(chapter.id)

@@ -62,6 +62,7 @@ import coil.request.ImageRequest
 import com.erumi.nativeapp.manga.data.local.MangaPreferencesDataStore
 import com.erumi.nativeapp.manga.data.repository.MangaRepository
 import com.erumi.nativeapp.manga.data.sources.MangaHttpClient
+import com.erumi.nativeapp.manga.domain.models.MangaChapter
 import com.erumi.nativeapp.manga.domain.models.MangaImageScale
 import com.erumi.nativeapp.manga.domain.models.MangaPage
 import com.erumi.nativeapp.manga.domain.models.MangaReaderSettings
@@ -102,7 +103,7 @@ data class ReaderUiState(
     val controlsVisible: Boolean = false,
     val isLoading: Boolean = true,
     val error: String? = null,
-    val chapters: List<Pair<String, String>> = emptyList()
+    val chapters: List<MangaChapter> = emptyList()
 )
 
 class MangaReaderViewModel(
@@ -132,7 +133,7 @@ class MangaReaderViewModel(
             when (val result = repo.getPages(args.chapterUrl)) {
                 is MangaResult.Success -> {
                     val chapters = when (val ch = repo.getChapters(args.mangaUrl, args.mangaId)) {
-                        is MangaResult.Success -> ch.data.map { it.url to it.name }
+                        is MangaResult.Success -> ch.data
                         else -> emptyList()
                     }
                     _uiState.update {
@@ -175,7 +176,7 @@ class MangaReaderViewModel(
             repo.saveProgress(
                 MangaReadingProgress(
                     mangaId = args.mangaId,
-                    sourceId = "manhuaplus",
+                    sourceId = args.mangaId.substringBefore(':').ifBlank { "manhuaplus" },
                     mangaTitle = args.title,
                     coverUrl = args.coverUrl,
                     chapterId = args.chapterId,
@@ -200,9 +201,9 @@ class MangaReaderViewModel(
         }
     }
 
-    fun adjacentChapter(next: Boolean): Pair<String, String>? {
+    fun adjacentChapter(next: Boolean): MangaChapter? {
         val list = _uiState.value.chapters
-        val idx = list.indexOfFirst { it.first == args.chapterUrl }
+        val idx = list.indexOfFirst { it.url == args.chapterUrl }
         if (idx < 0) return null
         // Chapters from the source are newest-first, so a higher chapter number sits at a
         // LOWER index. "Next" chapter (higher number) is therefore at idx - 1, and the
@@ -283,9 +284,16 @@ fun MangaReaderScreen(
                         onPageVisible = viewModel::onPageChanged,
                         onToggleControls = viewModel::toggleControls,
                         adjacentChapter = viewModel::adjacentChapter,
-                        onOpenAdjacentChapter = { (url, name) ->
+                        onOpenAdjacentChapter = { chapter ->
                             viewModel.saveNow()
-                            onOpenChapter(argsEncoded.copy(chapterUrl = url, chapterName = name, chapterId = url, chapterNumber = null))
+                            onOpenChapter(
+                                argsEncoded.copy(
+                                    chapterUrl = chapter.url,
+                                    chapterName = chapter.name,
+                                    chapterId = chapter.id,
+                                    chapterNumber = chapter.number
+                                )
+                            )
                         }
                     )
                 } else {
@@ -356,9 +364,16 @@ fun MangaReaderScreen(
                 val prev = viewModel.adjacentChapter(false)
                 TextButton(
                     onClick = {
-                        prev?.let { (url, name) ->
+                        prev?.let { chapter ->
                             viewModel.saveNow()
-                            onOpenChapter(argsEncoded.copy(chapterUrl = url, chapterName = name, chapterId = url, chapterNumber = null))
+                            onOpenChapter(
+                                argsEncoded.copy(
+                                    chapterUrl = chapter.url,
+                                    chapterName = chapter.name,
+                                    chapterId = chapter.id,
+                                    chapterNumber = chapter.number
+                                )
+                            )
                         }
                     },
                     enabled = prev != null
@@ -373,10 +388,10 @@ fun MangaReaderScreen(
                             viewModel.saveNow()
                             onOpenChapter(
                                 argsEncoded.copy(
-                                    chapterUrl = next.first,
-                                    chapterName = next.second,
-                                    chapterId = next.first,
-                                    chapterNumber = null
+                                    chapterUrl = next.url,
+                                    chapterName = next.name,
+                                    chapterId = next.id,
+                                    chapterNumber = next.number
                                 )
                             )
                         },
@@ -406,8 +421,8 @@ private fun VerticalReader(
     scaleMode: MangaImageScale,
     onPageVisible: (Int) -> Unit,
     onToggleControls: () -> Unit,
-    adjacentChapter: (Boolean) -> Pair<String, String>?,
-    onOpenAdjacentChapter: (Pair<String, String>) -> Unit
+    adjacentChapter: (Boolean) -> MangaChapter?,
+    onOpenAdjacentChapter: (MangaChapter) -> Unit
 ) {
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialPage.coerceAtMost(pages.lastIndex.coerceAtLeast(0)))
     LaunchedEffect(listState) {

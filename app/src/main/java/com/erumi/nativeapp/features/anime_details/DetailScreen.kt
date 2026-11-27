@@ -519,7 +519,15 @@ fun DetailScreen(
                                 .padding(32.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(color = ErumiPrimary)
+                            if (state.isLoading) {
+                                CircularProgressIndicator(color = ErumiPrimary)
+                            } else {
+                                Text(
+                                    text = "No episodes available yet.",
+                                    color = ErumiSecondaryText,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
                         }
                     }
                 } else if (isGridMode) {

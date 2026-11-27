@@ -111,7 +111,6 @@ fun ErumiTourOverlay(
                 onClick = { /* Consume background touches */ }
             )
     ) {
-        val screenHeight = maxHeight
         val windowRect = step.targetKey?.let { tourState.targets[it] }
         val localRect = windowRect?.let {
             Rect(
@@ -174,8 +173,8 @@ fun ErumiTourOverlay(
             }
         }
 
-        // Determine if target is in the upper half or lower half
-        val isTargetInLowerHalf = localRect != null && localRect.top > (screenHeight.value * 0.45f)
+        // Determine if target is in the upper half or lower half (both in pixels)
+        val isTargetInLowerHalf = localRect != null && localRect.top > (constraints.maxHeight * 0.45f)
 
         Box(
             modifier = Modifier
