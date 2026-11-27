@@ -9,7 +9,8 @@ class MangaSourceManager(
         ManganatoSource(),
         AsuraScansSource(),
         FlameComicsSource(),
-        ManhuaScanSource()
+        ManhuaScanSource(),
+        ElfToonSource()
     )
 ) {
     private val sources = LinkedHashMap<String, MangaSource>()
@@ -52,7 +53,8 @@ class MangaSourceManager(
                 (source.info.id == AsuraScansSource.ID && ("asurascans" in lower || "asuracomic" in lower || "asura" in lower)) ||
                 (source.info.id == FlameComicsSource.ID && ("flamecomics" in lower || "flamescans" in lower)) ||
                 (source.info.id == ManhuaScanSource.ID && ("manhuascan" in lower || "manhuaus" in lower)) ||
-                (source.info.id == ManhuaPlusSource.ID && ("manhuaplus" in lower))
+                (source.info.id == ManhuaPlusSource.ID && ("manhuaplus" in lower)) ||
+                (source.info.id == ElfToonSource.ID && ("elftoon" in lower))
         }
     }
 
