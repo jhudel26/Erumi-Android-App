@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.erumi.nativeapp.manga.data.repository.MangaRepository
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.manga.domain.models.Manga
 import com.erumi.nativeapp.manga.domain.models.MangaResult
 import com.erumi.nativeapp.shared.ui.components.MediaEmptyState
@@ -77,7 +77,7 @@ data class SearchUiState(
 )
 
 class MangaSearchViewModel(application: Application) : AndroidViewModel(application) {
-    private val repo = MangaRepository(application)
+    private val repo = ErumiApplication.container(application).mangaRepository
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState = _uiState.asStateFlow()
     private var searchJob: Job? = null

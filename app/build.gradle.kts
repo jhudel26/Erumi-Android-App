@@ -12,8 +12,8 @@ android {
         applicationId = "com.erumi.nativeapp"
         minSdk = 26
         targetSdk = 34
-        versionCode = 8
-        versionName = "1.4.2"
+        versionCode = 9
+        versionName = "1.4.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -29,8 +29,24 @@ android {
         buildConfigField("String", "UPDATE_PUBLIC_KEY", "\"$updatePublicKey\"")
     }
 
+    signingConfigs {
+        val keystoreFile = rootProject.file("release-keystore.jks")
+        val ksPass = System.getenv("KEYSTORE_PASSWORD")
+        val kAlias = System.getenv("KEY_ALIAS")
+        val kPass = System.getenv("KEY_PASSWORD")
+        if (keystoreFile.exists() && !ksPass.isNullOrBlank() && !kAlias.isNullOrBlank() && !kPass.isNullOrBlank()) {
+            create("release") {
+                storeFile = keystoreFile
+                storePassword = ksPass
+                keyAlias = kAlias
+                keyPassword = kPass
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

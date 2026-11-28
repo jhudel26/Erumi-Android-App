@@ -14,11 +14,9 @@ import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import com.erumi.nativeapp.core.datastore.UserPreferencesDataStore
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.core.download.ErumiDownloadUtil
 import com.erumi.nativeapp.core.network.ErumiDataSourceFactory
-import com.erumi.nativeapp.data.repository.AnimeRepository
-import com.erumi.nativeapp.data.repository.UserLibraryRepository
 import com.erumi.nativeapp.domain.model.DownloadStatus
 import com.erumi.nativeapp.domain.model.Episode
 import com.erumi.nativeapp.domain.model.StreamSource
@@ -48,7 +46,7 @@ data class PlayerUiState(
     val isBuffering: Boolean = true,
     val currentPositionMs: Long = 0L,
     val durationMs: Long = 0L,
-    val isControlsVisible: Boolean = true,
+    val isControlsVisible: Boolean = false,
     val error: String? = null,
     val showSkipIntro: Boolean = false,
     val downloadStatus: DownloadStatus? = null,
@@ -67,9 +65,10 @@ class PlayerViewModel(
 
     val resolvedAnimeId: String = if (!animeId.isNullOrBlank()) animeId else "anime_${animeTitle.hashCode()}"
 
-    private val animeRepo = AnimeRepository(application)
-    private val libraryRepo = UserLibraryRepository(application)
-    private val preferencesDataStore = UserPreferencesDataStore(application)
+    private val container = ErumiApplication.container(application)
+    private val animeRepo = container.animeRepository
+    private val libraryRepo = container.userLibraryRepository
+    private val preferencesDataStore = container.userPreferencesDataStore
 
     private var userSettings: UserSettings = UserSettings()
     private var animePoster: String? = initialPoster
@@ -475,7 +474,7 @@ class PlayerViewModel(
                         )
                     }
                 }
-                delay(1000)
+                delay(200)
             }
         }
     }
@@ -494,15 +493,21 @@ class PlayerViewModel(
     }
 
     fun seekTo(positionMs: Long) {
-        exoPlayer?.seekTo(positionMs)
+        val player = exoPlayer ?: return
+        val dur = player.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
+        val target = positionMs.coerceIn(0L, dur)
+        _uiState.update { it.copy(currentPositionMs = target) }
+        player.seekTo(target)
     }
 
     fun seekForward() {
-        exoPlayer?.seekForward()
+        val player = exoPlayer ?: return
+        seekTo(player.currentPosition + 10_000L)
     }
 
     fun seekBackward() {
-        exoPlayer?.seekBack()
+        val player = exoPlayer ?: return
+        seekTo(player.currentPosition - 10_000L)
     }
 
     fun setPlaybackSpeed(speed: Float) {

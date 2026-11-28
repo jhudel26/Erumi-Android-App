@@ -11,6 +11,7 @@ import com.erumi.nativeapp.engine.sources.AniNekoSource
 import com.erumi.nativeapp.engine.sources.HiAnimeSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
 
 class EpisodeResolver(
     private val hiAnimeSource: HiAnimeSource = HiAnimeSource(),
@@ -26,8 +27,8 @@ class EpisodeResolver(
         )
     }
 
-    private val episodesMemoryCache = mutableMapOf<String, List<Episode>>()
-    private val streamMemoryCache = mutableMapOf<String, StreamSource>()
+    private val episodesMemoryCache = ConcurrentHashMap<String, List<Episode>>()
+    private val streamMemoryCache = ConcurrentHashMap<String, StreamSource>()
 
     suspend fun getEpisodes(animeTitle: String, totalCatalogEpisodes: Int? = null): List<Episode> = withContext(Dispatchers.IO) {
         val cleanTitle = animeTitle.trim()

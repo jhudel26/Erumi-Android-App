@@ -72,7 +72,7 @@ class UpdateChecker(
         }.getOrElse { throwable ->
             val msg = when (throwable) {
                 is IOException -> "Unable to reach update server. Check your internet connection."
-                else -> "Failed to check for updates."
+                else -> "Failed to check for updates: ${throwable.message ?: throwable.javaClass.simpleName}"
             }
             Log.w(UpdateConfig.TAG, "Update check failed: ${throwable.message}", throwable)
             UpdateCheckResult.Error(msg, throwable)

@@ -3,9 +3,8 @@
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.core.common.Resource
-import com.erumi.nativeapp.data.repository.AnimeRepository
-import com.erumi.nativeapp.data.repository.UserLibraryRepository
 import com.erumi.nativeapp.domain.model.Anime
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -23,8 +22,9 @@ data class SearchUiState(
 
 class SearchViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val animeRepo = AnimeRepository(application)
-    private val libraryRepo = UserLibraryRepository(application)
+    private val container = ErumiApplication.container(application)
+    private val animeRepo = container.animeRepository
+    private val libraryRepo = container.userLibraryRepository
 
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()

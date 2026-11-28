@@ -3,7 +3,7 @@ package com.erumi.nativeapp.features.downloads
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.erumi.nativeapp.data.repository.UserLibraryRepository
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.domain.model.DownloadItem
 import com.erumi.nativeapp.domain.model.DownloadStatus
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +32,7 @@ data class DownloadsUiState(
 
 class DownloadsViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val libraryRepo = UserLibraryRepository(application)
+    private val libraryRepo = ErumiApplication.container(application).userLibraryRepository
     private val _uiState = MutableStateFlow(DownloadsUiState())
     val uiState: StateFlow<DownloadsUiState> = _uiState.asStateFlow()
 

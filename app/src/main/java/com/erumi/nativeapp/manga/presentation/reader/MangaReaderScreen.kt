@@ -59,8 +59,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.manga.data.local.MangaPreferencesDataStore
-import com.erumi.nativeapp.manga.data.repository.MangaRepository
 import com.erumi.nativeapp.manga.data.sources.MangaHttpClient
 import com.erumi.nativeapp.manga.domain.models.MangaChapter
 import com.erumi.nativeapp.manga.domain.models.MangaImageScale
@@ -71,12 +71,15 @@ import com.erumi.nativeapp.manga.domain.models.MangaReadingMode
 import com.erumi.nativeapp.manga.domain.models.MangaReadingProgress
 import com.erumi.nativeapp.manga.domain.models.MangaResult
 import com.erumi.nativeapp.manga.presentation.components.MangaErrorState
+import com.erumi.nativeapp.shared.ui.components.RunningSpriteLoader
 import com.erumi.nativeapp.shared.ui.components.rememberShimmerBrush
 import com.erumi.nativeapp.ui.theme.ErumiBackground
 import com.erumi.nativeapp.ui.theme.ErumiPrimary
 import com.erumi.nativeapp.ui.theme.ErumiPrimaryText
 import com.erumi.nativeapp.ui.theme.ErumiSecondaryText
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -110,8 +113,9 @@ class MangaReaderViewModel(
     application: Application,
     private val args: ReaderArgs
 ) : AndroidViewModel(application) {
-    private val repo = MangaRepository(application)
-    private val prefs = MangaPreferencesDataStore(application)
+    private val container = ErumiApplication.container(application)
+    private val repo = container.mangaRepository
+    private val prefs = container.mangaPreferencesDataStore
     private val _uiState = MutableStateFlow(ReaderUiState())
     val uiState = _uiState.asStateFlow()
     private var saveJob: Job? = null
@@ -128,12 +132,17 @@ class MangaReaderViewModel(
     fun load() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            val progress = repo.getProgress(args.mangaId)
+            val (progress, result, chaptersResult) = coroutineScope {
+                val progressDeferred = async { repo.getProgress(args.mangaId) }
+                val pagesDeferred = async { repo.getPages(args.chapterUrl) }
+                val chaptersDeferred = async { repo.getChapters(args.mangaUrl, args.mangaId) }
+                Triple(progressDeferred.await(), pagesDeferred.await(), chaptersDeferred.await())
+            }
             val startPage = if (progress?.chapterId == args.chapterId) progress.pageIndex else 0
-            when (val result = repo.getPages(args.chapterUrl)) {
+            when (result) {
                 is MangaResult.Success -> {
-                    val chapters = when (val ch = repo.getChapters(args.mangaUrl, args.mangaId)) {
-                        is MangaResult.Success -> ch.data
+                    val chapters = when (chaptersResult) {
+                        is MangaResult.Success -> chaptersResult.data
                         else -> emptyList()
                     }
                     _uiState.update {
@@ -272,7 +281,10 @@ fun MangaReaderScreen(
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         when {
             state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = ErumiPrimary)
+                RunningSpriteLoader(
+                    size = 84.dp,
+                    label = "Loading chapter..."
+                )
             }
             state.error != null -> MangaErrorState(state.error!!, onRetry = viewModel::load)
             else -> {
@@ -563,15 +575,7 @@ private fun ReaderPage(
     ) {
         val context = LocalContext.current
         val imageRequest = remember(url) {
-            val referer = when {
-                url.contains("2xstorage") || url.contains("manganato") || url.contains("manganelo") ||
-                url.contains("readmanganato") || url.contains("natomanga") -> "https://www.manganato.gg/"
-                url.contains("manhuaplus") -> "https://manhuaplus.org/"
-                url.contains("asura") || url.contains("asuracomic") -> "https://asuracomic.net/"
-                url.contains("flamecomics") -> "https://flamecomics.xyz/"
-                url.contains("manhuascan") || url.contains("manhuaus") -> "https://manhuascan.io/"
-                else -> null
-            }
+            val referer = MangaHttpClient.refererForImageUrl(url)
             ImageRequest.Builder(context)
                 .data(url)
                 .crossfade(true)

@@ -6,7 +6,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.erumi.nativeapp.manga.data.repository.MangaRepository
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.manga.domain.models.Manga
 import com.erumi.nativeapp.manga.domain.models.MangaLibraryItem
 import com.erumi.nativeapp.manga.domain.models.MangaReadingProgress
@@ -34,7 +34,7 @@ data class MangaHomeUiState(
 )
 
 class MangaHomeViewModel(application: Application) : AndroidViewModel(application) {
-    private val repo = MangaRepository(application)
+    private val repo = ErumiApplication.container(application).mangaRepository
     private val _uiState = MutableStateFlow(MangaHomeUiState())
     val uiState: StateFlow<MangaHomeUiState> = _uiState.asStateFlow()
 

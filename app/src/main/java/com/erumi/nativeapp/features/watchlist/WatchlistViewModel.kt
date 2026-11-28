@@ -3,7 +3,7 @@ package com.erumi.nativeapp.features.watchlist
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.erumi.nativeapp.data.repository.UserLibraryRepository
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.domain.model.Anime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +18,7 @@ data class WatchlistUiState(
 
 class WatchlistViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val libraryRepo = UserLibraryRepository(application)
+    private val libraryRepo = ErumiApplication.container(application).userLibraryRepository
     private val _uiState = MutableStateFlow(WatchlistUiState())
     val uiState: StateFlow<WatchlistUiState> = _uiState.asStateFlow()
 

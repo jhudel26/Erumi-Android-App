@@ -1,8 +1,8 @@
 package com.erumi.nativeapp.core.network
 
 import com.erumi.nativeapp.core.common.Constants
+import com.erumi.nativeapp.manga.data.sources.MangaHttpClient
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
@@ -21,16 +21,7 @@ object ApiClient {
                 val originalRef = original.header("Referer")
                 val customRef = original.header("X-Custom-Referer")
 
-                val mangaReferer = when {
-                    url.contains("2xstorage") || url.contains("manganato") || url.contains("manganelo") ||
-                    url.contains("readmanganato") || url.contains("natomanga") || url.contains("nelomanga") -> "https://www.manganato.gg/"
-                    url.contains("manhuaplus") -> "https://manhuaplus.org/"
-                    url.contains("asura") || url.contains("asuracomic") -> "https://asuracomic.net/"
-                    url.contains("flamecomics") || url.contains("flamescans") -> "https://flamecomics.xyz/"
-                    url.contains("manhuascan") || url.contains("manhuaus") -> "https://manhuascan.io/"
-                    url.contains("elftoon") -> "https://elftoon.net/"
-                    else -> null
-                }
+                val mangaReferer = MangaHttpClient.refererForImageUrl(url)
 
                 val resolvedRef = when {
                     !originalRef.isNullOrBlank() -> originalRef
@@ -67,8 +58,8 @@ object ApiClient {
                 // E3: Exponential backoff retry interceptor for 429 Too Many Requests & 503 Service Unavailable
                 while ((response.code == 429 || response.code == 503) && retryCount < 2) {
                     retryCount++
+                    val retryAfterSec = response.header("Retry-After")?.toLongOrNull() ?: retryCount.toLong()
                     response.close()
-                    val retryAfterSec = response.header("Retry-After")?.toLongOrNull() ?: (retryCount * 1000L)
                     val backoffMs = if (retryAfterSec > 60) 2000L else (retryAfterSec * 1000L).coerceAtLeast(1000L)
                     try {
                         Thread.sleep(backoffMs)

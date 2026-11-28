@@ -62,7 +62,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.erumi.nativeapp.BuildConfig
 import com.erumi.nativeapp.manga.data.local.MangaPreferencesDataStore
-import com.erumi.nativeapp.manga.data.repository.MangaRepository
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.manga.domain.models.MangaDownloadSettings
 import com.erumi.nativeapp.manga.domain.models.MangaImageScale
 import com.erumi.nativeapp.manga.domain.models.MangaReaderSettings
@@ -86,7 +86,7 @@ import kotlinx.coroutines.launch
 
 class MangaSettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = MangaPreferencesDataStore(application)
-    private val repo = MangaRepository(application)
+    private val repo = ErumiApplication.container(application).mangaRepository
 
     val readerSettings = prefs.readerSettings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MangaReaderSettings())
     val downloadSettings = prefs.downloadSettings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MangaDownloadSettings())

@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.erumi.nativeapp.manga.data.repository.MangaRepository
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.manga.domain.models.MangaHistoryEntry
 import com.erumi.nativeapp.manga.presentation.components.MangaCoverImage
 import com.erumi.nativeapp.shared.ui.components.MediaEmptyState
@@ -62,7 +62,7 @@ import java.text.DateFormat
 import java.util.Date
 
 class MangaHistoryViewModel(application: Application) : AndroidViewModel(application) {
-    private val repo = MangaRepository(application)
+    private val repo = ErumiApplication.container(application).mangaRepository
     val items = repo.observeHistory().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun remove(mangaId: String) = viewModelScope.launch { repo.deleteHistory(mangaId) }

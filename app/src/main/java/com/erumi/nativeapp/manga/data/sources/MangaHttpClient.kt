@@ -13,6 +13,24 @@ object MangaHttpClient {
     const val USER_AGENT =
         "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.179 Mobile Safari/537.36"
 
+    /**
+     * Resolves the required `Referer` header for manga CDN/image URLs so Coil and
+     * offline chapter downloads share one source of truth.
+     */
+    fun refererForImageUrl(url: String): String? {
+        val lower = url.lowercase()
+        return when {
+            "2xstorage" in lower || "manganato" in lower || "manganelo" in lower ||
+                "readmanganato" in lower || "natomanga" in lower || "nelomanga" in lower -> "https://www.manganato.gg/"
+            "manhuaplus" in lower -> "https://manhuaplus.org/"
+            "asura" in lower || "asuracomic" in lower -> "https://asuracomic.net/"
+            "flamecomics" in lower || "flamescans" in lower -> "https://flamecomics.xyz/"
+            "manhuascan" in lower || "manhuaus" in lower -> "https://manhuascan.io/"
+            "elftoon" in lower -> "https://elftoon.net/"
+            else -> null
+        }
+    }
+
     val client: OkHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BASIC

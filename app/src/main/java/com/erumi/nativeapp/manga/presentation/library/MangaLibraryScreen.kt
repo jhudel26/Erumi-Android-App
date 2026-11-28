@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.erumi.nativeapp.manga.data.repository.MangaRepository
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.manga.domain.models.MangaLibraryItem
 import com.erumi.nativeapp.manga.domain.models.MangaLibraryStatus
 import com.erumi.nativeapp.manga.presentation.components.MangaCoverImage
@@ -54,7 +54,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class MangaLibraryViewModel(application: Application) : AndroidViewModel(application) {
-    private val repo = MangaRepository(application)
+    private val repo = ErumiApplication.container(application).mangaRepository
     val items: StateFlow<List<MangaLibraryItem>> = repo.observeLibrary()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 

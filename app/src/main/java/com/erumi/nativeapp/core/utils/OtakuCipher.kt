@@ -1,12 +1,14 @@
 package com.erumi.nativeapp.core.utils
 
+import java.util.Base64
+
 object OtakuCipher {
     private const val KEY = "otaku-embed-v1"
 
     fun deobfuscate(blob: String): String {
         return try {
             val cleaned = blob.trim().replace("\n", "").replace("\r", "")
-            val raw = android.util.Base64.decode(cleaned, android.util.Base64.DEFAULT)
+            val raw = Base64.getDecoder().decode(cleaned)
             val keyBytes = KEY.toByteArray(Charsets.UTF_8)
             val out = ByteArray(raw.size)
             for (i in raw.indices) {

@@ -3,10 +3,9 @@
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.core.datastore.UserPreferencesDataStore
 import com.erumi.nativeapp.core.utils.FuzzyMatcher
-import com.erumi.nativeapp.data.repository.AnimeRepository
-import com.erumi.nativeapp.data.repository.UserLibraryRepository
 import com.erumi.nativeapp.domain.model.Anime
 import com.erumi.nativeapp.domain.model.DownloadItem
 import com.erumi.nativeapp.domain.model.DownloadStatus
@@ -32,9 +31,10 @@ class DetailViewModel(
     private val animeTitle: String
 ) : AndroidViewModel(application) {
 
-    private val animeRepo = AnimeRepository(application) // A3: pass context so ImageResolver is initialized
-    private val libraryRepo = UserLibraryRepository(application)
-    private val preferencesDataStore = UserPreferencesDataStore(application)
+    private val container = ErumiApplication.container(application)
+    private val animeRepo = container.animeRepository
+    private val libraryRepo = container.userLibraryRepository
+    private val preferencesDataStore = container.userPreferencesDataStore
 
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
@@ -115,7 +115,7 @@ class DetailViewModel(
                     } else {
                         current.episodes
                     }
-                    current.copy(downloadsMap = filtered, episodes = resolvedEpisodes, isLoading = false)
+                    current.copy(downloadsMap = filtered, episodes = resolvedEpisodes)
                 }
             }
         }

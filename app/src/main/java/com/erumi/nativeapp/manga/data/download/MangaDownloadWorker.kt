@@ -9,9 +9,17 @@ import com.erumi.nativeapp.manga.data.sources.MangaHttpClient
 import com.erumi.nativeapp.manga.data.sources.MangaSourceManager
 import com.erumi.nativeapp.manga.domain.models.MangaDownloadStatus
 import com.erumi.nativeapp.manga.domain.models.MangaResult
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import okhttp3.Request
 import java.io.File
 import java.net.URLDecoder
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 class MangaDownloadWorker(
     appContext: Context,
@@ -93,35 +101,51 @@ class MangaDownloadWorker(
             return fail(downloadId, "Unable to create download directory")
         }
 
-        pages.forEachIndexed { index, page ->
-            if (isStopped) {
-                db.downloadDao().updateStatus(
-                    downloadId,
-                    MangaDownloadStatus.CANCELLED.name,
-                    index,
-                    "Cancelled",
-                    dir.absolutePath
-                )
-                return Result.failure()
-            }
+        val semaphore = Semaphore(4)
+        val completedCount = AtomicInteger(0)
+        val anyFailed = AtomicBoolean(false)
 
-            val outFile = File(dir, "%03d.jpg".format(index))
-            if (!outFile.exists() || outFile.length() == 0L) {
-                val ok = downloadImage(page.imageUrl, outFile, entity.chapterUrl)
-                if (!ok) {
-                    return fail(downloadId, "Failed downloading page ${index + 1}")
+        coroutineScope {
+            pages.mapIndexed { index, page ->
+                async(Dispatchers.IO) {
+                    semaphore.withPermit {
+                        if (isStopped || anyFailed.get()) return@withPermit
+                        val outFile = File(dir, "%03d.jpg".format(index))
+                        if (!outFile.exists() || outFile.length() == 0L) {
+                            val ok = downloadImage(page.imageUrl, outFile, entity.chapterUrl)
+                            if (!ok) {
+                                anyFailed.set(true)
+                                return@withPermit
+                            }
+                        }
+                        val done = completedCount.incrementAndGet()
+                        val progress = (done * 100) / pages.size
+                        db.downloadDao().updateStatus(
+                            downloadId,
+                            MangaDownloadStatus.DOWNLOADING.name,
+                            progress,
+                            null,
+                            dir.absolutePath
+                        )
+                        setProgress(workDataOf("progress" to progress))
+                    }
                 }
-            }
+            }.awaitAll()
+        }
 
-            val progress = ((index + 1) * 100) / pages.size
+        if (isStopped) {
             db.downloadDao().updateStatus(
                 downloadId,
-                MangaDownloadStatus.DOWNLOADING.name,
-                progress,
-                null,
+                MangaDownloadStatus.CANCELLED.name,
+                completedCount.get(),
+                "Cancelled",
                 dir.absolutePath
             )
-            setProgress(workDataOf("progress" to progress))
+            return Result.failure()
+        }
+
+        if (anyFailed.get()) {
+            return fail(downloadId, "Failed downloading chapter pages")
         }
 
         // Validate: all expected files present and non-empty
@@ -145,11 +169,12 @@ class MangaDownloadWorker(
 
     private fun downloadImage(url: String, outFile: File, referer: String): Boolean {
         return runCatching {
+            val resolvedReferer = MangaHttpClient.refererForImageUrl(url) ?: referer
             val request = Request.Builder()
                 .url(url)
                 .header("User-Agent", MangaHttpClient.USER_AGENT)
                 .header("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
-                .header("Referer", referer)
+                .header("Referer", resolvedReferer)
                 .build()
             MangaHttpClient.client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) return false

@@ -3,8 +3,8 @@ package com.erumi.nativeapp.features.browse
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.core.common.Resource
-import com.erumi.nativeapp.data.repository.AnimeRepository
 import com.erumi.nativeapp.domain.model.Anime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +18,7 @@ data class BrowseUiState(
 )
 
 class BrowseViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = AnimeRepository(application)
+    private val repository = ErumiApplication.container(application).animeRepository
 
     private val _uiState = MutableStateFlow(BrowseUiState())
     val uiState: StateFlow<BrowseUiState> = _uiState.asStateFlow()

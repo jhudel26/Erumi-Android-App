@@ -6,12 +6,12 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.core.common.Resource
-import com.erumi.nativeapp.data.repository.AnimeRepository
-import com.erumi.nativeapp.data.repository.UserLibraryRepository
 import com.erumi.nativeapp.domain.model.Anime
 import com.erumi.nativeapp.domain.model.WatchProgress
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -31,11 +31,15 @@ data class HomeUiState(
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val animeRepo = AnimeRepository(application)
-    private val libraryRepo = UserLibraryRepository(application)
+    private val container = ErumiApplication.container(application)
+    private val animeRepo = container.animeRepository
+    private val libraryRepo = container.userLibraryRepository
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private var latestJob: Job? = null
+    private var popularJob: Job? = null
 
     init {
         loadData()
@@ -55,7 +59,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        viewModelScope.launch {
+        latestJob?.cancel()
+        latestJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, isOffline = false) }
 
             // Latest releases
@@ -99,7 +104,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        viewModelScope.launch {
+        popularJob?.cancel()
+        popularJob = viewModelScope.launch {
             if (!isOnline()) return@launch
             animeRepo.getPopularFlow(20).collect { res ->
                 if (res is Resource.Success) {

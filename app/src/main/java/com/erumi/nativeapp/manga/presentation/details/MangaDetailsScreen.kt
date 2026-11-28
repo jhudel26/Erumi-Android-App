@@ -52,7 +52,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.erumi.nativeapp.manga.data.download.MangaDownloadManager
-import com.erumi.nativeapp.manga.data.repository.MangaRepository
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.manga.domain.models.MangaChapter
 import com.erumi.nativeapp.manga.domain.models.MangaDetails
 import com.erumi.nativeapp.manga.domain.models.MangaLibraryStatus
@@ -92,7 +92,7 @@ class MangaDetailsViewModel(
     application: Application,
     private val mangaUrl: String
 ) : AndroidViewModel(application) {
-    private val repo = MangaRepository(application)
+    private val repo = ErumiApplication.container(application).mangaRepository
     private val downloads = MangaDownloadManager(application)
     private val _uiState = MutableStateFlow(DetailsUiState())
     val uiState = _uiState.asStateFlow()

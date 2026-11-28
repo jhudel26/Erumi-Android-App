@@ -28,7 +28,6 @@ object FuzzyMatcher {
         t = t.replace('"', ' ').replace('"', ' ')
         t = t.replace(Regex("""\s+"""), " ")
         val result = t.trim()
-        android.util.Log.d("ErumiFuzzy", "cleanTitleForHiAnime: '$title' -> '$result'")
         return result
     }
 

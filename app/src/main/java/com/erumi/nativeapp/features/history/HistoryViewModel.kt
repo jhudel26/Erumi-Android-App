@@ -3,7 +3,7 @@ package com.erumi.nativeapp.features.history
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.erumi.nativeapp.data.repository.UserLibraryRepository
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.domain.model.WatchProgress
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +17,7 @@ data class HistoryUiState(
 
 class HistoryViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val libraryRepo = UserLibraryRepository(application)
+    private val libraryRepo = ErumiApplication.container(application).userLibraryRepository
     private val _uiState = MutableStateFlow(HistoryUiState())
     val uiState: StateFlow<HistoryUiState> = _uiState.asStateFlow()
 

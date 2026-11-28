@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.erumi.nativeapp.manga.data.repository.MangaRepository
+import com.erumi.nativeapp.ErumiApplication
 import com.erumi.nativeapp.manga.domain.models.Manga
 import com.erumi.nativeapp.manga.domain.models.MangaResult
 import com.erumi.nativeapp.manga.domain.models.MangaSortOption
@@ -61,7 +61,7 @@ data class DiscoverUiState(
 )
 
 class MangaDiscoverViewModel(application: Application) : AndroidViewModel(application) {
-    private val repo = MangaRepository(application)
+    private val repo = ErumiApplication.container(application).mangaRepository
     private val _uiState = MutableStateFlow(DiscoverUiState())
     val uiState = _uiState.asStateFlow()
 

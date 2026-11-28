@@ -2,7 +2,6 @@
 
 import android.content.Context
 import com.erumi.nativeapp.core.common.Resource
-import com.erumi.nativeapp.core.image.ImageResolver
 import com.erumi.nativeapp.domain.model.Anime
 import com.erumi.nativeapp.domain.model.Episode
 import com.erumi.nativeapp.domain.model.StreamSource
@@ -21,13 +20,6 @@ class AnimeRepository(
     private val aniListSource: AniListSource = AniListSource(),
     private val episodeResolver: EpisodeResolver = EpisodeResolver()
 ) {
-
-    private val imageResolver: ImageResolver? = try {
-        ImageResolver(context)
-    } catch (e: Exception) {
-        android.util.Log.e("AnimeRepository", "Failed to initialize ImageResolver: ${e.message}", e)
-        null
-    }
 
     @Volatile private var cachedTrending: List<Anime>? = null
     @Volatile private var cachedLatest: List<Anime>? = null

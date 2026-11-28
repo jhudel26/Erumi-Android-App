@@ -11,7 +11,7 @@
 [![Material 3](https://img.shields.io/badge/Material%203-Dark%20Cinema-14B8A6)](https://m3.material.io/)
 [![Media3 ExoPlayer](https://img.shields.io/badge/Media3%20ExoPlayer-1.3.0-00A8E8)](https://developer.android.com/media/media3/exoplayer)
 [![Android](https://img.shields.io/badge/Android-8.0%2B%20(API%2026--34)-3DDC84?logo=android&logoColor=white)](https://developer.android.com/)
-[![Version](https://img.shields.io/badge/Version-1.4.2-0F766E)](https://github.com/jhudel26/Erumi-Android-App/releases)
+[![Version](https://img.shields.io/badge/Version-1.4.3-0F766E)](https://github.com/jhudel26/Erumi-Android-App/releases)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 *Clean Architecture · MVVM · Jetpack Compose · Kotlin Coroutines & Flow*

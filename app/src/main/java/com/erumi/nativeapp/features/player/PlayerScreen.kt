@@ -102,6 +102,7 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import com.erumi.nativeapp.domain.model.DownloadStatus
+import com.erumi.nativeapp.shared.ui.components.RunningSpriteLoader
 import com.erumi.nativeapp.ui.theme.ErumiBackground
 import com.erumi.nativeapp.ui.theme.ErumiBorder
 import com.erumi.nativeapp.ui.theme.ErumiElevatedSurface
@@ -131,7 +132,11 @@ fun PlayerScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val state by viewModel.uiState.collectAsState()
 
-    var isControlsVisible by remember { mutableStateOf(true) }
+    var isControlsVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state.currentEpisodeNumber) {
+        isControlsVisible = false
+    }
     var showSpeedDialog by remember { mutableStateOf(false) }
     var showSubtitleDialog by remember { mutableStateOf(false) }
     var showAspectDialog by remember { mutableStateOf(false) }
@@ -409,14 +414,10 @@ fun PlayerScreen(
                     .background(Color.Black.copy(alpha = 0.4f)),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(color = ErumiPrimary, modifier = Modifier.size(48.dp))
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Summoning your stream...",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = ErumiPrimaryText)
-                    )
-                }
+                RunningSpriteLoader(
+                    size = 84.dp,
+                    label = "Summoning your stream..."
+                )
             }
         }
 
