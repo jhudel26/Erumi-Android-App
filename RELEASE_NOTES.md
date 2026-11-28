@@ -4,6 +4,33 @@ This document contains the release history of **Erumi Native**, including new fe
 
 ---
 
+## Version 1.4.3
+### Animated Sprite Loader, Smooth Player Scrubbing & Core Architecture Fixes
+
+### New Features & UI Improvements
+
+- **24-Frame Running Sprite Loader**: Replaced the spinning loader in both the Anime Player and Manga Reader with a smooth, vsync-locked 24-frame `RunningSpriteLoader` (`Canvas` + `withFrameMillis`).
+- **Cleaner Player Startup**: Player controls now start hidden when opening an anime or switching episodes so only the loading animation is shown until playback is ready.
+- **Smooth Player Scrubbing**: Increased progress polling to 200ms and added immediate position state updates on seek so the progress bar glides smoothly without snapping back on release, while keeping controls interactive during buffering.
+
+### Performance & Architecture
+
+- **Shared `AppContainer` DI**: Centralized `AnimeRepository`, `MangaRepository`, `EpisodeResolver`, `UserLibraryRepository`, and `MangaSourceManager` on `ErumiApplication` so in-memory caches are shared across screens.
+- **Parallel Manga Loading & Downloads**:
+  - `MangaReaderViewModel` now loads reading progress, chapter pages, and chapter lists concurrently.
+  - `MangaDownloadWorker` downloads up to 4 chapter pages concurrently using a bounded `Semaphore`.
+- **Thread-Safe Resolver Caches**: Switched `EpisodeResolver` in-memory episode and stream caches to `ConcurrentHashMap`.
+
+### Bug Fixes & Build
+
+- **Detail Screen Loading State**: Fixed `DetailViewModel` prematurely clearing `isLoading` when local download flows emitted before details/episodes finished loading.
+- **API Retry Backoff**: Fixed `ApiClient` reading `Retry-After` after closing the response and corrected the default retry backoff calculation.
+- **Centralized Manga Image Referers**: Unified CDN `Referer` header resolution in `MangaHttpClient.refererForImageUrl()` across Coil and `MangaDownloadWorker`.
+- **Home Reload Job Management**: Tracked and cancelled previous `HomeViewModel` fetch jobs on refresh/retry.
+- **Unit Tests & Release Signing**: Fixed `FuzzyMatcherTest` (`OtakuCipher` `java.util.Base64` & `FuzzyMatcher` logging), added `MangaSourceAndRefererTest`, and added conditional release `signingConfigs` in `app/build.gradle.kts`.
+
+---
+
 ## Version 1.3.0
 ### Manga Support, Multi-Experience Architecture & Platform Enhancements
 
