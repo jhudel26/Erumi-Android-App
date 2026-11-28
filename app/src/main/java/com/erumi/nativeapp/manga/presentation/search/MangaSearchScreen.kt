@@ -119,7 +119,14 @@ class MangaSearchViewModel(application: Application) : AndroidViewModel(applicat
     private suspend fun performSearch(query: String) {
         val trimmed = query.trim()
         if (trimmed.isBlank()) return
-        _uiState.update { it.copy(isLoading = true, error = null, searched = true, query = trimmed) }
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                error = null,
+                searched = true,
+                query = if (it.query.trim() == trimmed) it.query else trimmed
+            )
+        }
         when (val result = repo.search(trimmed, 1)) {
             is MangaResult.Success -> _uiState.update {
                 it.copy(results = result.data.items, isLoading = false, error = null)

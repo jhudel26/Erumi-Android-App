@@ -4,6 +4,24 @@ This document contains the release history of **Erumi Native**, including new fe
 
 ---
 
+## Version 1.4.4
+### Modern Floating Navigation, Branded Updater & Experience Polish
+
+### New Features & UI Improvements
+
+- **Modern Floating Pill Navigation**: Redesigned `MediaBottomNavBar` as a floating translucent pill dock with animated active pill highlights, spring icon scaling, haptic feedback, and smooth slide/fade transitions.
+- **Branded Update Dialog**: Redesigned `UpdateDialog` with the Erumi brand mark (`ic_brand_mark`), teal gradient accent bar, status badge, and an `Installed → Available` version comparison card.
+- **Keep Screen Awake in Player**: Added `FLAG_KEEP_SCREEN_ON` in `PlayerScreen` while anime is playing or buffering so the device screen does not sleep mid-episode.
+
+### Behavior & Bug Fixes
+
+- **Direct Bottom-Tab Navigation**: Fixed `BaseNavGraph` so tapping `Home`, `Browse`/`Discover`, `Watchlist`/`Library`, `Downloads`, or `Settings` clears nested detail screens and navigates directly to that tab instead of restoring old detail pages.
+- **Automatic Launch Update Check**: Updated `UpdateManager` so the app automatically checks for a new version on every cold launch while keeping the 6-hour throttle for in-session resumes.
+- **Always-On Multi-Source Manhua**: Locked Manga/Manhua catalog mode to `Auto` across all sources and removed the redundant Source selector from Manga Settings and its onboarding tour step.
+- **Search Input Spacing Fix**: Fixed `SearchViewModel` and `MangaSearchViewModel` trimming spaces out of the search bar while typing multi-word titles.
+
+---
+
 ## Version 1.4.3
 ### Animated Sprite Loader, Smooth Player Scrubbing & Core Architecture Fixes
 

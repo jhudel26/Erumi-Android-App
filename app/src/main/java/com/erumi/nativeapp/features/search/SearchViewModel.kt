@@ -62,7 +62,14 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
         val q = queryToSearch.trim()
         if (q.isBlank()) return
 
-        _uiState.update { it.copy(query = q, isSearching = true, hasSearched = true, error = null) }
+        _uiState.update {
+            it.copy(
+                query = if (it.query.trim() == q) it.query else q,
+                isSearching = true,
+                hasSearched = true,
+                error = null
+            )
+        }
 
         viewModelScope.launch {
             animeRepo.searchFlow(q).collect { resource ->

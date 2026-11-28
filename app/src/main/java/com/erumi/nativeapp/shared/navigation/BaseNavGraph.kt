@@ -41,7 +41,7 @@ fun BaseNavGraph(
                     // - launchSingleTop = true to avoid duplicate instances
                     navController.navigate(screen.route) {
                         popUpTo(startDestination) {
-                            inclusive = true
+                            inclusive = false
                             saveState = false
                         }
                         launchSingleTop = true
