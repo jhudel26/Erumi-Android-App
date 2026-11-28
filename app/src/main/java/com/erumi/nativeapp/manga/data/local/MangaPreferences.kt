@@ -94,9 +94,9 @@ class MangaPreferencesDataStore(private val context: Context) {
         val DOWNLOAD_LOCATION = stringPreferencesKey("download_location")
     }
 
-    val activeSourceId: Flow<String> = context.mangaDataStore.data
-        .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
-        .map { it[Keys.ACTIVE_SOURCE] ?: com.erumi.nativeapp.manga.data.sources.MangaSourceManager.AUTO_SOURCE_ID }
+    val activeSourceId: Flow<String> = kotlinx.coroutines.flow.flowOf(
+        com.erumi.nativeapp.manga.data.sources.MangaSourceManager.AUTO_SOURCE_ID
+    )
 
     val readerSettings: Flow<MangaReaderSettings> = context.mangaDataStore.data
         .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }

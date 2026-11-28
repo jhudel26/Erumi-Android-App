@@ -164,6 +164,19 @@ fun PlayerScreen(
     var isLocked by remember { mutableStateOf(false) }
     var showLockIndicator by remember { mutableStateOf(false) }
 
+    // Keep screen awake while anime is playing or buffering; allow normal sleep when paused or exited
+    DisposableEffect(activity, state.isPlaying, state.isBuffering) {
+        val window = activity?.window
+        if (state.isPlaying || state.isBuffering) {
+            window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {
+            window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
     // Auto-hide lock indicator after 2 seconds
     LaunchedEffect(showLockIndicator) {
         if (showLockIndicator) {

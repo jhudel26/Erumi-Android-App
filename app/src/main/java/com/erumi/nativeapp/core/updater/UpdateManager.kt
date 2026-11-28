@@ -35,14 +35,19 @@ class UpdateManager private constructor(context: Context) {
     private var checkJob: Job? = null
     private var lastManifest: UpdateManifest? = null
     private var lastMandatory: Boolean = false
+    @Volatile private var hasCheckedThisSession: Boolean = false
 
     /**
-     * Checks for updates if [force] is true or if the last successful check is older
-     * than [UpdateConfig.CHECK_INTERVAL_MS]. Safe to call on startup and foreground resume.
+     * Checks for updates if [force] is true, on the first check of the app session,
+     * or if the last successful check is older than [UpdateConfig.CHECK_INTERVAL_MS].
+     * Safe to call on startup and foreground resume.
      */
     fun checkForUpdates(force: Boolean = false) {
         if (downloadJob?.isActive == true) return
         if (checkJob?.isActive == true) return
+
+        val isFirstSessionCheck = !hasCheckedThisSession
+        hasCheckedThisSession = true
 
         checkJob = scope.launch {
             val (installedCode, installedName) = checker.getInstalledVersion()
@@ -54,12 +59,12 @@ class UpdateManager private constructor(context: Context) {
                 preferences.clearPendingApk()
             }
 
-            if (!force) {
+            if (!force && !isFirstSessionCheck) {
                 val elapsed = System.currentTimeMillis() - snapshot.lastSuccessfulCheckAtMs
                 if (snapshot.lastSuccessfulCheckAtMs > 0L && elapsed < UpdateConfig.CHECK_INTERVAL_MS) {
                     return@launch
                 }
-            } else {
+            } else if (force) {
                 _uiState.value = UpdateUiState.Checking
             }
 

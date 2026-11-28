@@ -90,16 +90,9 @@ class MangaSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     val readerSettings = prefs.readerSettings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MangaReaderSettings())
     val downloadSettings = prefs.downloadSettings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MangaDownloadSettings())
-    val activeSource = prefs.activeSourceId.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5_000),
-        com.erumi.nativeapp.manga.data.sources.MangaSourceManager.AUTO_SOURCE_ID
-    )
-    val sources = repo.listSources()
 
     fun updateReader(settings: MangaReaderSettings) = viewModelScope.launch { prefs.updateReaderSettings(settings) }
     fun updateDownloads(settings: MangaDownloadSettings) = viewModelScope.launch { prefs.updateDownloadSettings(settings) }
-    fun setSource(id: String) = viewModelScope.launch { repo.setActiveSource(id) }
     fun clearHistory() = viewModelScope.launch { repo.clearHistory() }
 }
 
@@ -113,7 +106,6 @@ fun MangaSettingsScreen(
 ) {
     val reader by viewModel.readerSettings.collectAsState()
     val downloads by viewModel.downloadSettings.collectAsState()
-    val activeSource by viewModel.activeSource.collectAsState()
 
     var showReadingModeDialog by remember { mutableStateOf(false) }
     var showDirectionDialog by remember { mutableStateOf(false) }
@@ -126,10 +118,9 @@ fun MangaSettingsScreen(
     LaunchedEffect(tourState?.currentStep) {
         when (tourState?.currentStep) {
             ErumiTourStep.MANGA_SETTINGS_READER -> listState.animateScrollToItem(0)
-            ErumiTourStep.MANGA_SETTINGS_SOURCE -> listState.animateScrollToItem(1)
-            ErumiTourStep.MANGA_SETTINGS_DOWNLOADS -> listState.animateScrollToItem(2)
-            ErumiTourStep.MANGA_SETTINGS_STORAGE -> listState.animateScrollToItem(3)
-            ErumiTourStep.MANGA_SETTINGS_EXPERIENCE -> listState.animateScrollToItem(4)
+            ErumiTourStep.MANGA_SETTINGS_DOWNLOADS -> listState.animateScrollToItem(1)
+            ErumiTourStep.MANGA_SETTINGS_STORAGE -> listState.animateScrollToItem(2)
+            ErumiTourStep.MANGA_SETTINGS_EXPERIENCE -> listState.animateScrollToItem(3)
             else -> Unit
         }
     }
@@ -196,34 +187,6 @@ fun MangaSettingsScreen(
                         checked = reader.autoSaveProgress,
                         onCheckedChange = { viewModel.updateReader(reader.copy(autoSaveProgress = it)) }
                     )
-                }
-            }
-
-            // SOURCE
-            item {
-                SettingsSection(
-                    title = "SOURCE",
-                    modifier = Modifier.tourHighlight(TourTargetKey.MANGA_SETTINGS_SOURCE)
-                ) {
-                    val autoId = com.erumi.nativeapp.manga.data.sources.MangaSourceManager.AUTO_SOURCE_ID
-                    SettingsItem(
-                        icon = Icons.AutoMirrored.Filled.MenuBook,
-                        title = "Auto (Best Source)",
-                        subtitle = if (activeSource == autoId) "Active • Unified multi-source engine" else "Unified multi-source engine",
-                        onClick = { viewModel.setSource(autoId) }
-                    )
-                    HorizontalDivider(color = ErumiBorder, thickness = 0.5.dp)
-                    viewModel.sources.forEach { source ->
-                        SettingsItem(
-                            icon = Icons.AutoMirrored.Filled.MenuBook,
-                            title = source.name,
-                            subtitle = if (source.id == activeSource) "Active (Pinned)" else "Available",
-                            onClick = { viewModel.setSource(source.id) }
-                        )
-                        if (source != viewModel.sources.last()) {
-                            HorizontalDivider(color = ErumiBorder, thickness = 0.5.dp)
-                        }
-                    }
                 }
             }
 

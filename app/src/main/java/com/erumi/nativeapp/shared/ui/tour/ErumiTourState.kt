@@ -110,7 +110,7 @@ enum class ErumiTourStep(
     MANGA_WELCOME(
         experience = ErumiExperience.MANGA,
         stepIndex = 0,
-        totalSteps = 7,
+        totalSteps = 6,
         section = "Welcome",
         title = "Welcome to Erumi Manhua",
         description = "Read thousands of chapters across top webtoon & manga sources, customize your vertical/horizontal reader, and download chapters for offline reading.\n\nTake a quick guided tour to explore search, experience switching, and reader settings!",
@@ -119,7 +119,7 @@ enum class ErumiTourStep(
     MANGA_HOME_SEARCH(
         experience = ErumiExperience.MANGA,
         stepIndex = 1,
-        totalSteps = 7,
+        totalSteps = 6,
         section = "Home",
         title = "Search Manga & Manhua",
         description = "Search across integrated catalogs for webtoons, manhua, and manga titles, or browse popular and trending series.",
@@ -128,7 +128,7 @@ enum class ErumiTourStep(
     MANGA_HOME_SWITCH(
         experience = ErumiExperience.MANGA,
         stepIndex = 2,
-        totalSteps = 7,
+        totalSteps = 6,
         section = "Home",
         title = "Switch Experience",
         description = "Tap this switch icon at the top of the screen anytime to instantly switch back to Anime streaming!",
@@ -137,25 +137,16 @@ enum class ErumiTourStep(
     MANGA_SETTINGS_READER(
         experience = ErumiExperience.MANGA,
         stepIndex = 3,
-        totalSteps = 7,
+        totalSteps = 6,
         section = "Settings",
         title = "Reader Settings",
         description = "Configure your reader: choose Vertical Webtoon scrolling or Horizontal pager, reading direction (LTR or RTL Manga), and double-tap gestures to toggle controls.",
         targetKey = TourTargetKey.MANGA_SETTINGS_READER
     ),
-    MANGA_SETTINGS_SOURCE(
-        experience = ErumiExperience.MANGA,
-        stepIndex = 4,
-        totalSteps = 7,
-        section = "Settings",
-        title = "Multi-Source Catalog",
-        description = "Easily select your active reading source from top providers like ManhuaPlus, Asura Scans, Flame Comics, and Manganato.",
-        targetKey = TourTargetKey.MANGA_SETTINGS_SOURCE
-    ),
     MANGA_SETTINGS_DOWNLOADS(
         experience = ErumiExperience.MANGA,
-        stepIndex = 5,
-        totalSteps = 7,
+        stepIndex = 4,
+        totalSteps = 6,
         section = "Settings",
         title = "Offline Downloads",
         description = "Download manga and manhua chapters for offline reading on the go, with Wi-Fi only protection to save your mobile data.",
@@ -163,8 +154,8 @@ enum class ErumiTourStep(
     ),
     MANGA_SETTINGS_EXPERIENCE(
         experience = ErumiExperience.MANGA,
-        stepIndex = 6,
-        totalSteps = 7,
+        stepIndex = 5,
+        totalSteps = 6,
         section = "Settings",
         title = "Switch to Anime in Settings",
         description = "You can also switch over to Anime streaming right here inside Settings whenever you want to watch anime!",
@@ -172,8 +163,8 @@ enum class ErumiTourStep(
     ),
     MANGA_SETTINGS_STORAGE(
         experience = ErumiExperience.MANGA,
-        stepIndex = 7,
-        totalSteps = 7,
+        stepIndex = 6,
+        totalSteps = 6,
         section = "Settings",
         title = "Storage & Tour Replay",
         description = "Clear reading history anytime to free up storage space. You can also replay this guided tour whenever you need from Help & Tutorial!",
@@ -231,8 +222,7 @@ class ErumiTourState(
                 navController.navigate(MangaScreen.Settings.route)
                 ErumiTourStep.MANGA_SETTINGS_READER
             }
-            ErumiTourStep.MANGA_SETTINGS_READER -> ErumiTourStep.MANGA_SETTINGS_SOURCE
-            ErumiTourStep.MANGA_SETTINGS_SOURCE -> ErumiTourStep.MANGA_SETTINGS_DOWNLOADS
+            ErumiTourStep.MANGA_SETTINGS_READER -> ErumiTourStep.MANGA_SETTINGS_DOWNLOADS
             ErumiTourStep.MANGA_SETTINGS_DOWNLOADS -> ErumiTourStep.MANGA_SETTINGS_EXPERIENCE
             ErumiTourStep.MANGA_SETTINGS_EXPERIENCE -> ErumiTourStep.MANGA_SETTINGS_STORAGE
             ErumiTourStep.MANGA_SETTINGS_STORAGE -> {
@@ -262,8 +252,7 @@ class ErumiTourState(
                 navController.popBackStack(MangaScreen.Home.route, false)
                 ErumiTourStep.MANGA_HOME_SWITCH
             }
-            ErumiTourStep.MANGA_SETTINGS_SOURCE -> ErumiTourStep.MANGA_SETTINGS_READER
-            ErumiTourStep.MANGA_SETTINGS_DOWNLOADS -> ErumiTourStep.MANGA_SETTINGS_SOURCE
+            ErumiTourStep.MANGA_SETTINGS_DOWNLOADS -> ErumiTourStep.MANGA_SETTINGS_READER
             ErumiTourStep.MANGA_SETTINGS_EXPERIENCE -> ErumiTourStep.MANGA_SETTINGS_DOWNLOADS
             ErumiTourStep.MANGA_SETTINGS_STORAGE -> ErumiTourStep.MANGA_SETTINGS_EXPERIENCE
 

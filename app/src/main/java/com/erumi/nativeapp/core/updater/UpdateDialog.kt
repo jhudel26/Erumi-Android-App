@@ -1,5 +1,6 @@
 package com.erumi.nativeapp.core.updater
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -38,12 +39,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.erumi.nativeapp.R
 import com.erumi.nativeapp.ui.theme.BgCard
 import com.erumi.nativeapp.ui.theme.BgMain
 import com.erumi.nativeapp.ui.theme.BgSurfaceElevated
@@ -89,18 +95,29 @@ fun UpdateDialogHost(
         )
     ) {
         Surface(
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(24.dp),
             color = BgSurfaceElevated,
-            tonalElevation = 8.dp,
+            tonalElevation = 10.dp,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, BorderSubtle, RoundedCornerShape(20.dp))
+                .border(1.dp, BorderSubtle, RoundedCornerShape(24.dp))
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(22.dp)
-            ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(TealPrimary, TealLight, TealPrimary.copy(alpha = 0.6f))
+                            )
+                        )
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(22.dp)
+                ) {
                 when (state) {
                     UpdateUiState.Idle -> Unit
                     is UpdateUiState.Checking -> {
@@ -444,6 +461,7 @@ fun UpdateDialogHost(
                             }
                         }
                     }
+                    }
                 }
             }
         }
@@ -458,27 +476,53 @@ private fun UpdateHeader(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(iconTint.copy(alpha = 0.14f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(22.dp)
+        Box(modifier = Modifier.size(52.dp)) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_brand_mark),
+                contentDescription = "Erumi",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(48.dp)
+                    .align(Alignment.TopStart)
+                    .clip(RoundedCornerShape(14.dp))
+                    .border(1.5.dp, iconTint.copy(alpha = 0.7f), RoundedCornerShape(14.dp))
+            )
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .align(Alignment.BottomEnd)
+                    .clip(CircleShape)
+                    .background(BgSurfaceElevated)
+                    .padding(2.dp)
+                    .clip(CircleShape)
+                    .background(iconTint),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = BgMain,
+                    modifier = Modifier.size(13.dp)
+                )
+            }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = "ERUMI UPDATER",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp
+                ),
+                color = iconTint
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = TextPrimary
             )
         }
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = TextPrimary
-        )
     }
 }
 
@@ -491,22 +535,34 @@ private fun VersionBadgeRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(BgCard)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .border(1.dp, BorderSubtle, RoundedCornerShape(14.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text("Current", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-            Text(currentVersion, style = MaterialTheme.typography.bodySmall, color = TextPrimary)
+            Text("Installed", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = currentVersion,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                color = TextPrimary
+            )
         }
+        Text(
+            text = "→",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = TealPrimary
+        )
         Column(horizontalAlignment = Alignment.End) {
-            Text("Latest", style = MaterialTheme.typography.labelSmall, color = TealLight)
+            Text("Available", style = MaterialTheme.typography.labelSmall, color = TealLight)
+            Spacer(modifier = Modifier.height(2.dp))
             val suffix = fileSizeBytes?.takeIf { it > 0L }?.let { " • ${formatBytes(it)}" }.orEmpty()
             Text(
                 text = "$latestVersion$suffix",
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                 color = TealLight
             )
         }
